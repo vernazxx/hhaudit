@@ -1,0 +1,11 @@
+repos:
+- repo: https://github.com/returntocorp/semgrep
+  rev: 'v1.65.0'
+  hooks:
+    - id: semgrep
+      args: ['--config', 'p/default', '--error']
+- repo: https://github.com/Yelp/detect-secrets
+  rev: v1.4.0
+  hooks:
+    - id: detect-secrets
+      args: ['--baseline', '.secrets.baseline']
