@@ -1,4 +1,5 @@
 # HTTP Headers Auditor
+
 Check HTTP headers of a running service against a baseline. Like most auditors this is an opinionated tool.
 
 ## Local development
@@ -7,7 +8,7 @@ Check HTTP headers of a running service against a baseline. Like most auditors t
 
 #### Arch
 
-```shell
+```sh
 sudo pacman -S pre-commit
 yay -Sy semgrep-bin
 pipx install detect-secrets
@@ -15,7 +16,7 @@ pipx install detect-secrets
 
 #### macOS
 
-```shell
+```sh
 brew install pre-commit semgrep detect-secrets
 ```
 
@@ -23,13 +24,13 @@ brew install pre-commit semgrep detect-secrets
 
 #### Install
 
-```shell
+```sh
 pre-commit install
 ```
 
 #### Run
 
-```shell
+```sh
 pre-commit run
 ```
 
@@ -41,36 +42,50 @@ Source: [detect-secrets][]
 
 #### Create a baseline
 
-```shell
+```sh
 detect-secrets scan > .secrets.baseline
 ```
 
 #### Run an audit against the baseline
 
-```shell
+```sh
 detect-secrets audit .secrets.baseline
 ```
 
 #### Run an audit for all tracked files against the current baseline
 
-```shell
+```sh
 detect-secrets-hook --baseline .secrets.baseline $(git ls-files)
 ```
 
 #### Update the baseline
 
-```shell
+```sh
 detect-secrets scan --baseline .secrets.baseline
+```
+
+## Releases
+
+Releases are done using the GoReleaser [GitHub action][GoReleaser GitHub action] when a new tag is added.
+
+Example:
+
+```sh
+git tag -s -m "Release vN.N.N" vN.N.N HEAD
+git push --tags
 ```
 
 ## More information
 
-* [pre-commit][]
-* [Semgrep][]
-* [detect-secrets][]
+* [pre-commit]
+* [Semgrep]
+* [detect-secrets]
+* [GoReleaser]
+* [GoReleaser GitHub action]
 
 
 [Semgrep]: https://semgrep.dev/
 [pre-commit]: https://pre-commit.com/
 [detect-secrets]: https://github.com/Yelp/detect-secrets
-
+[GoReleaser]: https://goreleaser.com/
+[GoReleaser GitHub action]: https://github.com/goreleaser/goreleaser-action
