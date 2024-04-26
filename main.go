@@ -3,8 +3,10 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log"
+	"log/slog"
+	"net/http"
 	"net/url"
+	"os"
 )
 
 func printBanner() {
@@ -20,8 +22,24 @@ func printBanner() {
 	fmt.Printf("%s", banner)
 }
 
-func scan(target *url.URL) {
-	fmt.Printf("Scanning HTTP headers from: %s", target)
+func scan(target *url.URL) error {
+	fmt.Printf("Target: %s\n\n", target.String())
+
+	req, err := http.NewRequest(http.MethodHead, target.String(), nil)
+	if err != nil {
+		return err
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+
+	for h, v := range resp.Header {
+		for vv := range v {
+			fmt.Printf("%s - %s\n", h, v[vv])
+		}
+	}
+	return nil
 }
 
 func getURL(rawurl *string) (*url.URL, error) {
@@ -35,8 +53,13 @@ func main() {
 
 	target, err := getURL(rawurl)
 	if err != nil {
-		log.Fatalln("Invalid URL")
+		slog.Error("Input", err)
+		os.Exit(1)
 	}
 
-	scan(target)
+	err = scan(target)
+	if err != nil {
+		slog.Error("Scan", err)
+		os.Exit(1)
+	}
 }
