@@ -2,6 +2,23 @@
 
 Check HTTP headers of a running service against a baseline. Like most auditors this is an opinionated tool.
 
+## Usage
+
+If you want to see if the tool is working, just run it.
+
+```sh
+ __     __                   __ __ __
+|  |--.|  |--.---.-.--.--.--|  |__|  |_
+|     ||     |  _  |  |  |  _  |  |   _|
+|__|__||__|__|___._|_____|_____|__|____|
+
+:: Audit those HTTP headers ::
+
+Usage of bin/hhaudit:
+  -u string
+        The URL of the target website to audit (default "http://example.com")
+```
+
 ## Local development
 
 ### Install requirements
@@ -62,6 +79,14 @@ detect-secrets-hook --baseline .secrets.baseline $(git ls-files)
 
 ```sh
 detect-secrets scan --baseline .secrets.baseline
+```
+
+## Build
+
+To create the tool binary, run:
+
+```sh
+make build
 ```
 
 ## Releases
