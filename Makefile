@@ -1,25 +1,48 @@
 .PHONY: all
-all: build
+all: debug-build govulncheck semgrep
 
 .PHONY: build
-build: tidy format test
-	go build -o bin/hhaudit
+build: tidy fmt lint test
+	go build -ldflags="-s -w" -o bin/hhaudit
+
+.PHONY: debug-build
+debug-build: tidy fmt lint test
+	go build -gcflags=all="-N -l" -o bin/hhaudit
 
 .PHONY: release
-release: tidy format test
+release: tidy fmt lint test
 	goreleaser release --snapshot --clean
-
-.PHONY: format
-format:
-	gofmt -s -w .
-
-.PHONY: test
-test:
-	go test -cover
 
 .PHONY: tidy
 tidy:
 	go mod tidy
+
+.PHONY: ci-tidy
+ci-tidy:
+	git diff --quiet
+	go mod tidy
+	git diff --quiet || (echo -e "\nModified files:" && git status --short && echo -e "\nRun 'make tidy' locally and commit the changes.\n" && exit 1)
+
+.PHONY: fmt
+fmt:
+	gofmt -s -w .
+
+.PHONY: lint
+lint:
+	golangci-lint cache status
+	golangci-lint run -E gosec
+
+.PHONY: govulncheck
+govulncheck:
+	go run golang.org/x/vuln/cmd/govulncheck@latest -show verbose ./...
+
+.PHONY: semgrep
+semgrep:
+	semgrep --config 'p/default' --error
+
+.PHONY: test
+test:
+	go test -cover
 
 .PHONY: clean
 clean: tidy
