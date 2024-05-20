@@ -9,6 +9,34 @@ import (
 	"os"
 )
 
+type Category int16
+
+const (
+	General  Category = 0
+	Cache    Category = 1
+	Security Category = 2
+)
+
+func (c Category) String() string {
+	switch c {
+	case General:
+		return "general"
+	case Cache:
+		return "cache"
+	case Security:
+		return "security"
+	}
+	return "unknown"
+}
+
+type Header struct {
+	Header   http.Header `json:"header"`
+	Value    string      `json:"value"`
+	Doc      string      `json:"doc"`
+	Category string      `json:"category"`
+	Rec      string      `json:"recommendation"`
+}
+
 func printBanner() {
 	banner := `
  __     __                   __ __ __
@@ -22,28 +50,45 @@ func printBanner() {
 	fmt.Printf("%s", banner)
 }
 
-func scan(target *url.URL) error {
+func scan(target *url.URL) (http.Header, error) {
 	fmt.Printf("Target: %s\n\n", target.String())
 
-	req, err := http.NewRequest(http.MethodHead, target.String(), nil)
+	resp, err := http.Head(target.String())
 	if err != nil {
-		return err
-	}
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return err
+		return nil, err
 	}
 
-	for h, v := range resp.Header {
-		for vv := range v {
-			fmt.Printf("%s - %s\n", h, v[vv])
-		}
-	}
-	return nil
+	return resp.Header, nil
 }
 
 func getURL(rawurl *string) (*url.URL, error) {
 	return url.ParseRequestURI(*rawurl)
+}
+
+func audit(kb map[string]Header, tgH http.Header) error {
+	// TODO: audit header values against a baseline db
+	return nil
+}
+
+func populateData() (map[string]Header, error) {
+	kb := map[string]Header{
+		"Content-Type": {
+			Doc:      "The `Content-Type` representation header is used to indicate the original media type of the resource (before any content encoding is applied for sending). If not set correctly, the resource (e.g. an image) may be interpreted as HTML, making XSS vulnerabilities possible.",
+			Category: "general",
+			Rec:      "",
+		},
+	}
+	return kb, nil
+}
+
+func dumpHeaders(hd http.Header) {
+	for h, v := range hd {
+		fmt.Printf("%s: ", h)
+		for vv := range v {
+			fmt.Printf("%s", v[vv])
+		}
+		fmt.Println()
+	}
 }
 
 func main() {
@@ -53,13 +98,28 @@ func main() {
 
 	target, err := getURL(rawurl)
 	if err != nil {
-		slog.Error("Input", err)
+		slog.Error(err.Error(), "sys", "input")
 		os.Exit(1)
 	}
 
-	err = scan(target)
+	kb, err := populateData()
 	if err != nil {
-		slog.Error("Scan", err)
+		slog.Error(err.Error(), "sys", "knowledge-base")
+		os.Exit(1)
+	}
+
+	var tgH http.Header
+	tgH, err = scan(target)
+	if err != nil {
+		slog.Error(err.Error(), "sys", "scan")
+		os.Exit(1)
+	}
+
+	dumpHeaders(tgH)
+
+	err = audit(kb, tgH)
+	if err != nil {
+		slog.Error(err.Error(), "sys", "audit")
 		os.Exit(1)
 	}
 }
