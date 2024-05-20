@@ -64,8 +64,9 @@ jobs:
     name: Semgrep
     runs-on: ubuntu-latest
     container:
-      #image: semgrep/semgrep@sha256:c77a80a21bca590fed05857291b881f82ae233a52c8e573e127b761b40b7cff5
-      image: returntocorp/semgrep@sha256:ffc6f3567654f9431456d49fd059dfe548f007c494a7eb6cd5a1a3e50d813fb3
+      #image: returntocorp/semgrep@sha256:ffc6f3567654f9431456d49fd059dfe548f007c494a7eb6cd5a1a3e50d813fb3
+      image: returntocorp/semgrep:sha256:078d5dae9b2184f710cb7fc5228036147699e787dd0ac838ab91cae7083689bb
+      #image: returntocorp/semgrep:sha256:ae5570fcc805c3941e1cbed4159630d2721ad0fa1a9320d625e5473ae47e271b
     # Skip any PR created by dependabot and any check triggered by merge group
     if: (github.actor != 'dependabot[bot]') && (github.event != 'merge_group')
     steps:
