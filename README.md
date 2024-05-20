@@ -2,6 +2,12 @@
 
 Check HTTP headers of a running service against a baseline. Like most auditors this is an opinionated tool.
 
+An excellent reference followed through out the development of this tool is [OWASP Secure Headers Project]. If you haven't heard about it you should check it out.
+
+Other projects with similar goals as `hhaudit`:
+
+* [OWASP Secure Headers Project validator]
+
 ## Usage
 
 If you want to see if the tool is working, just run it.
@@ -28,13 +34,15 @@ Usage of bin/hhaudit:
 ```sh
 sudo pacman -S pre-commit
 yay -Sy semgrep-bin
+pipx install semgrep
 pipx install detect-secrets
+yay -S golangci-lint
 ```
 
 #### macOS
 
 ```sh
-brew install pre-commit semgrep detect-secrets
+brew install pre-commit semgrep detect-secrets golangci-lint
 ```
 
 ### Pre-commit hook
@@ -114,3 +122,6 @@ git push --tags
 [detect-secrets]: https://github.com/Yelp/detect-secrets
 [GoReleaser]: https://goreleaser.com/
 [GoReleaser GitHub action]: https://github.com/goreleaser/goreleaser-action
+[OWASP Secure Headers Project]: https://owasp.org/www-project-secure-headers/
+[OWASP HTTP Security Response Headers Cheat Sheet]: https://cheatsheetseries.owasp.org/cheatsheets/HTTP_Headers_Cheat_Sheet.html
+[OWASP Secure Headers Project validator]: https://github.com/oshp/oshp-validator?tab=readme-ov-file

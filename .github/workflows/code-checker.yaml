@@ -1,0 +1,89 @@
+name: Run linters
+
+on:
+  merge_group:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.head_ref || github.run_id }}-codecheck
+  cancel-in-progress: true
+
+jobs:
+  vulnerabilities:
+    name: Vulnerable dependencies
+    runs-on: ubuntu-latest
+    if: github.base_ref == 'main'
+    steps:
+      - uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633  # v4
+        with:
+          fetch-depth: 0
+      - name: Setup Go
+        uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7 # v5.0.1
+        with:
+          go-version-file: './go.mod'
+      - run: make govulncheck
+        name: Check dependencies for vulnerabilities
+
+  lint:
+    name: Linters
+    runs-on: ubuntu-latest
+    if: github.base_ref == 'main'
+    steps:
+      - uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633  # v4
+        with:
+          fetch-depth: 0
+      - name: Setup Go
+        uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7 # v5.0.1
+        with:
+          go-version-file: './go.mod'
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@a4f60bb28d35aeee14e6880718e0c85ff1882e64  # v6.0.1
+
+  format:
+    name: Format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633  # v4
+      - name: Setup Go
+        uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7 # v5.0.1
+        with:
+          go-version-file: './go.mod'
+      - name: Go format
+        run: |
+          make fmt
+          if ! git diff --exit-code; then
+            echo "Code has formatting errors. Run 'make fmt' to fix"
+            exit 1
+          fi
+
+  semgrep:
+    name: Semgrep
+    runs-on: ubuntu-latest
+    container:
+      #image: returntocorp/semgrep@sha256:ffc6f3567654f9431456d49fd059dfe548f007c494a7eb6cd5a1a3e50d813fb3
+      image: returntocorp/semgrep@sha256:078d5dae9b2184f710cb7fc5228036147699e787dd0ac838ab91cae7083689bb
+    # Skip any PR created by dependabot and any check triggered by merge group
+    if: (github.actor != 'dependabot[bot]') && (github.event != 'merge_group')
+    steps:
+      - uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633  # v4
+      - name: Run Semgrep Rules
+        id: semgrep
+        run: semgrep --config 'p/default' --error
+
+  gomod:
+    name: Go mod checks
+    runs-on: ubuntu-latest
+    if: github.base_ref == 'main'
+    steps:
+      - uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633  # v4
+      - name: Setup Go
+        uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7 # v5.0.1
+        with:
+          go-version-file: './go.mod'
+      - run: make ci-tidy
+        name: Run go mod tidy to check for differences
+
