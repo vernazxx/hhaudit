@@ -1,16 +1,17 @@
 .PHONY: all
-all: debug-build govulncheck semgrep
+all: build govulncheck semgrep
 
 .PHONY: build
 build: tidy fmt lint test
-	go build -ldflags="-s -w" -o bin/hhaudit
+	CGO_ENABLED=0 \
+	go build -buildmode=pie -trimpath -mod=readonly -ldflags="-s -w" -o bin/hhaudit
 
 .PHONY: debug-build
 debug-build: tidy fmt lint test
-	go build -gcflags=all="-N -l" -o bin/hhaudit
+	go build -gcflags="all=-N -l" -o bin/hhaudit
 
-.PHONY: release
-release: tidy fmt lint test
+.PHONY: local-release
+local-release: tidy fmt lint test
 	goreleaser release --snapshot --clean
 
 .PHONY: tidy
