@@ -1,0 +1,36 @@
+version: 2
+
+updates:
+  - package-ecosystem: github-actions
+    directory: '/'
+    schedule:
+      interval: weekly
+      timezone: 'Europe/Lisbon'
+      day: monday
+      time: '09:00'
+    rebase-strategy: auto
+    commit-message:
+      prefix: ci
+      prefix-development: ci
+      include: scope
+    groups:
+      actions-deps:
+        patterns:
+          - ".github/workflows/*"
+
+  - package-ecosystem: gomod
+    directory: '/'
+    schedule:
+      interval: weekly
+      timezone: 'Europe/Lisbon'
+      day: monday
+      time: '09:00'
+    rebase-strategy: auto
+    commit-message:
+      prefix: fix
+      prefix-development: fix
+      include: scope
+    groups:
+      go-deps:
+        patterns:
+          - "*"
