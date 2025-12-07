@@ -1,12 +1,29 @@
 .PHONY: all
 all: build govulncheck semgrep
 
+.PHONY: help
+help:
+	@echo "Please use \`make <target>' where <target> is one of"
+	@echo "  help           to print this help message"
+	@echo "  build          to build the binary for production mode"
+	@echo "  build-dev      to build the binary for development mode"
+	@echo "  local-release  to create a local release"
+	@echo "  tidy           to ensure go.mod matches the source in the module"
+	@echo "  tidy-ci        to run 'make tidy' and commit changes"
+	@echo "  fmt            to run the formatter on python code"
+	@echo "  lint           to run the linter on python code"
+	@echo "  govulncheck    to check for known vulnerabilities"
+	@echo "  semgrep        to run SAST suite"
+	@echo "  test           to run test suite"
+	@echo "  clean          to delete the project temporary files"
+	@echo "  run            to run the binary"
+
 .PHONY: build
 build: tidy fmt lint test
 	CGO_ENABLED=0 \
 	go build -buildmode=pie -trimpath -mod=readonly -ldflags="-s -w" -o bin/hhaudit
 
-.PHONY: debug-build
+.PHONY: build-dev
 debug-build: tidy fmt lint test
 	go build -gcflags="all=-N -l" -o bin/hhaudit
 
@@ -18,8 +35,8 @@ local-release: tidy fmt lint test
 tidy:
 	go mod tidy
 
-.PHONY: ci-tidy
-ci-tidy:
+.PHONY: tidy-ci
+tidy-ci:
 	git diff --quiet
 	go mod tidy
 	git diff --quiet || (echo -e "\nModified files:" && git status --short && echo -e "\nRun 'make tidy' locally and commit the changes.\n" && exit 1)
