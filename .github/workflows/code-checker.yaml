@@ -64,7 +64,6 @@ jobs:
     name: Semgrep
     runs-on: ubuntu-latest
     container:
-      #image: returntocorp/semgrep@sha256:ffc6f3567654f9431456d49fd059dfe548f007c494a7eb6cd5a1a3e50d813fb3
       image: returntocorp/semgrep@sha256:078d5dae9b2184f710cb7fc5228036147699e787dd0ac838ab91cae7083689bb
     # Skip any PR created by dependabot and any check triggered by merge group
     if: (github.actor != 'dependabot[bot]') && (github.event != 'merge_group')
@@ -84,6 +83,6 @@ jobs:
         uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6.1.0
         with:
           go-version-file: './go.mod'
-      - run: make ci-tidy
+      - run: make tidy-ci
         name: Run go mod tidy to check for differences
 
