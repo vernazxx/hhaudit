@@ -9,9 +9,9 @@ help:
 	@echo "  build-dev      to build the binary for development mode"
 	@echo "  local-release  to create a local release"
 	@echo "  tidy           to ensure go.mod matches the source in the module"
-	@echo "  tidy-ci        to run 'make tidy' and commit changes"
-	@echo "  fmt            to run the formatter on python code"
-	@echo "  lint           to run the linter on python code"
+	@echo "  tidy-ci        to fail if 'make tidy' would change go.mod/go.sum"
+	@echo "  fmt            to run the formatter on Go code"
+	@echo "  lint           to run the linter on Go code"
 	@echo "  govulncheck    to check for known vulnerabilities"
 	@echo "  semgrep        to run SAST suite"
 	@echo "  test           to run test suite"
@@ -24,7 +24,7 @@ build: tidy fmt lint test
 	go build -buildmode=pie -trimpath -mod=readonly -ldflags="-s -w" -o bin/hhaudit
 
 .PHONY: build-dev
-debug-build: tidy fmt lint test
+build-dev: tidy fmt lint test
 	go build -gcflags="all=-N -l" -o bin/hhaudit
 
 .PHONY: local-release
