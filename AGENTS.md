@@ -77,7 +77,11 @@ Before declaring any change done, run at minimum: `make fmt && make lint && make
 ## Working conventions
 
 - Branch from `main`; never push directly to `main`. One concern per PR.
-- Conventional-commit style messages, matching history: `feat:`, `fix:`, `ci:`, `docs:`, `test:`, `chore:` with optional scope (e.g. `ci(deps): …`). `docs:` and `test:` commits are excluded from the release changelog.
+- Commit messages follow the [commitizen guide](https://commitizen-tools.github.io/commitizen/tutorials/writing_commits/) (Conventional Commits):
+  - Subject: `<type>[(scope)]: <description>`, imperative mood ("If applied, this commit will …"), ~50 characters. Types: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`; scope optional (e.g. `ci(deps): …`, `build(go): …`).
+  - Body: explain why the change was made, what changed if the subject doesn't make it clear, and how behaviour differs from before.
+  - Breaking changes: `!` after the type/scope or a `BREAKING CHANGE:` footer.
+  - `docs:` and `test:` commits are excluded from the release changelog.
 - Do not add `Co-authored-by:` trailers (or any other AI attribution) to commit messages.
 - Do not add AI attribution (e.g. "Generated with …" footers) to PR descriptions.
 - Before committing or opening a PR, present the commit message and the PR title/body to the maintainer for review and wait for approval.
