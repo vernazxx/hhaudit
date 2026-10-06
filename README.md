@@ -53,6 +53,8 @@ brew install pre-commit semgrep detect-secrets golangci-lint
 pre-commit install
 ```
 
+This installs both the `pre-commit` hooks (semgrep, detect-secrets, golangci-lint) and a `commit-msg` hook that checks commit messages with [commitizen]. Messages must follow the [commitizen commit guide][commitizen writing commits], e.g. `fix(make): correct build-dev target name`.
+
 #### Run
 
 ```sh
@@ -112,12 +114,15 @@ git push --tags
 
 * [pre-commit]
 * [Semgrep]
+* [commitizen]
 * [detect-secrets]
 * [GoReleaser]
 * [GoReleaser GitHub action]
 
 
 [Semgrep]: https://semgrep.dev/
+[commitizen]: https://commitizen-tools.github.io/commitizen/
+[commitizen writing commits]: https://commitizen-tools.github.io/commitizen/tutorials/writing_commits/
 [pre-commit]: https://pre-commit.com/
 [detect-secrets]: https://github.com/Yelp/detect-secrets
 [GoReleaser]: https://goreleaser.com/
