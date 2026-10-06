@@ -8,6 +8,7 @@ repos:
   rev: 68e8b45440415753fff70a312ece8da92ba85b4a  # frozen: v1.5.0
   hooks:
     - id: detect-secrets
+      # The baseline excludes frozen `rev:` lines (public git SHAs, not secrets)
       args: ['--baseline', '.secrets.baseline']
 - repo: https://github.com/golangci/golangci-lint
   rev: 793d05316077345337ae9a11ae05ec8f23edfe1b  # frozen: v2.14.0
