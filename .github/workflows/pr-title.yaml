@@ -1,0 +1,31 @@
+name: PR title
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+# The title is read from the event payload; no token access needed
+permissions: {}
+
+concurrency:
+  group: ${{ github.event.pull_request.number }}-pr-title
+  cancel-in-progress: true
+
+jobs:
+  commitizen:
+    name: Conventional PR title
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check title follows commitizen format
+        env:
+          # Passed via env, never interpolated into the script (untrusted input)
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          # Same pattern as commitizen's default cz_conventional_commits rule
+          pattern='^(build|bump|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)(\([^[:space:]]+\))?!?: [^[:space:]].*$'
+          if [[ "$TITLE" =~ $pattern ]]; then
+            echo "PR title OK: $TITLE"
+          else
+            echo "::error title=PR title::'$TITLE' does not follow <type>[(scope)]: <description>. See https://commitizen-tools.github.io/commitizen/tutorials/writing_commits/"
+            exit 1
+          fi
