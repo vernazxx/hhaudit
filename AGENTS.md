@@ -9,7 +9,7 @@ Guidance for AI agents working in this repository. You are acting as a **securit
 Current state (verify before relying on it — the code is early-stage):
 
 - Single package, single binary: `main.go`, tests in `main_test.go`. Module name is `hhaudit`.
-- Flow: `printBanner` → parse `-u` flag → `getURL` (`url.ParseRequestURI`) → `populateData` (in-memory knowledge base, only `Content-Type` so far) → `scan` (`http.Head`) → `dumpHeaders` → `audit`.
+- Flow: `printBanner` → parse `-u` flag → `getURL` (`url.ParseRequestURI`) → `populateData` (in-memory knowledge base, only `Content-Type` so far) → `scan` (HTTP `HEAD` request) → `dumpHeaders` → `audit`.
 - `audit()` is a stub (`// TODO`). The knowledge base (`map[string]Header`) is the intended baseline DB.
 - No third-party runtime dependencies. `go.mod` only pulls `golang.org/x/vuln` (govulncheck) as a `tool` dependency. Keep it that way unless there is a strong reason; every new dependency is attack surface and must be justified in the PR.
 
@@ -61,7 +61,7 @@ Before declaring any change done, run at minimum: `make fmt && make lint && make
 ### Code
 - `gosec` findings are blockers. If a `#nosec` is genuinely warranted, scope it to a single rule (`// #nosec G107 -- reason`) and justify it.
 - This tool makes outbound requests to user-supplied URLs. Treat it as an SSRF-capable client:
-  - Use an `http.Client` with explicit timeouts (`http.Head` uses the default client, which has **no timeout**).
+  - Use an `http.Client` with explicit timeouts. Never use `http.Get`/`http.Head`/`http.DefaultClient`: the default client has **no timeout**.
   - Be deliberate about redirect following and report the final URL audited.
   - Only allow `http`/`https` schemes.
   - Do not send credentials or cookies; do not disable TLS verification by default. Any `InsecureSkipVerify` must be an explicit, loudly-named opt-in flag.
