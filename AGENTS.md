@@ -79,6 +79,8 @@ Before declaring any change done, run at minimum: `make fmt && make lint && make
 - Branch from `main`; never push directly to `main`. One concern per PR.
 - Conventional-commit style messages, matching history: `feat:`, `fix:`, `ci:`, `docs:`, `test:`, `chore:` with optional scope (e.g. `ci(deps): …`). `docs:` and `test:` commits are excluded from the release changelog.
 - Do not add `Co-authored-by:` trailers (or any other AI attribution) to commit messages.
+- Do not add AI attribution (e.g. "Generated with …" footers) to PR descriptions.
+- Before committing or opening a PR, present the commit message and the PR title/body to the maintainer for review and wait for approval.
 - Every PR description should state: what changed, security impact (positive/negative/none), how it was verified (commands run and their result).
 - Do not run the tool against third-party hosts you are not authorized to test. Use `httptest` locally or `example.com`.
 - If a task would require weakening a control (disabling a linter rule, widening permissions, allowlisting a secret, skipping a CI job), stop and ask a human instead of doing it.
