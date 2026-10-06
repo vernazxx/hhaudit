@@ -34,3 +34,22 @@ updates:
       go-deps:
         patterns:
           - "*"
+
+  # Bumps hook revs in .pre-commit-config.yaml, keeping `# frozen: vX.Y.Z` SHA pins
+  - package-ecosystem: pre-commit
+    directory: '/'
+    schedule:
+      interval: weekly
+      timezone: 'Europe/Lisbon'
+      day: monday
+      time: '09:00'
+    rebase-strategy: auto
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: chore
+      include: scope
+    groups:
+      pre-commit-hooks:
+        patterns:
+          - "*"
