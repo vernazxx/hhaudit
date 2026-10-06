@@ -52,7 +52,7 @@ lint:
 
 .PHONY: govulncheck
 govulncheck:
-	go run golang.org/x/vuln/cmd/govulncheck@latest -show verbose ./...
+	go tool govulncheck -show verbose ./...
 
 .PHONY: semgrep
 semgrep:
