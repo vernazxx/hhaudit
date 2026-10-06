@@ -16,7 +16,8 @@ jobs:
   vulnerabilities:
     name: Vulnerable dependencies
     runs-on: ubuntu-latest
-    if: github.base_ref == 'main'
+    # Run on push/merge queue; for PRs only when targeting main
+    if: github.event_name != 'pull_request' || github.base_ref == 'main'
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v4
         with:
@@ -31,7 +32,8 @@ jobs:
   lint:
     name: Linters
     runs-on: ubuntu-latest
-    if: github.base_ref == 'main'
+    # Run on push/merge queue; for PRs only when targeting main
+    if: github.event_name != 'pull_request' || github.base_ref == 'main'
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v4
         with:
@@ -66,7 +68,7 @@ jobs:
     container:
       image: returntocorp/semgrep@sha256:078d5dae9b2184f710cb7fc5228036147699e787dd0ac838ab91cae7083689bb
     # Skip any PR created by dependabot and any check triggered by merge group
-    if: (github.actor != 'dependabot[bot]') && (github.event != 'merge_group')
+    if: (github.actor != 'dependabot[bot]') && (github.event_name != 'merge_group')
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v4
       - name: Run Semgrep Rules
@@ -76,7 +78,8 @@ jobs:
   gomod:
     name: Go mod checks
     runs-on: ubuntu-latest
-    if: github.base_ref == 'main'
+    # Run on push/merge queue; for PRs only when targeting main
+    if: github.event_name != 'pull_request' || github.base_ref == 'main'
     steps:
       - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0  # v4
       - name: Setup Go
