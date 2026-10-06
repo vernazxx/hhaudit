@@ -8,6 +8,9 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+
 concurrency:
   group: ${{ github.head_ref || github.run_id }}-codecheck
   cancel-in-progress: true
