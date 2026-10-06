@@ -9,6 +9,13 @@ import (
 	"os"
 )
 
+// Set at build time via -ldflags "-X main.build=... -X main.commit=... -X main.date=...".
+var (
+	build  = "dev"
+	commit = "none"
+	date   = "unknown"
+)
+
 type Category int16
 
 const (
@@ -48,6 +55,10 @@ func printBanner() {
 
 `
 	fmt.Printf("%s", banner)
+}
+
+func versionString() string {
+	return fmt.Sprintf("hhaudit %s (commit %s, built %s)", build, commit, date)
 }
 
 func scan(target *url.URL) (http.Header, error) {
@@ -94,7 +105,13 @@ func dumpHeaders(hd http.Header) {
 func main() {
 	printBanner()
 	rawurl := flag.String("u", "http://example.com", "The URL of the target website to audit")
+	showVersion := flag.Bool("version", false, "Print version information and exit")
 	flag.Parse()
+
+	if *showVersion {
+		fmt.Println(versionString())
+		return
+	}
 
 	target, err := getURL(rawurl)
 	if err != nil {
