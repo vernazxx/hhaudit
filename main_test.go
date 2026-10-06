@@ -114,6 +114,15 @@ func TestDumpHeaders(t *testing.T) {
 	}
 }
 
+func TestVersionString(t *testing.T) {
+	got := versionString()
+	want := "hhaudit dev (commit none, built unknown)"
+
+	if got != want {
+		t.Errorf("got %q want %q", got, want)
+	}
+}
+
 func assertError(t testing.TB, got, want error) {
 	t.Helper()
 
