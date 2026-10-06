@@ -1,12 +1,23 @@
 package main
 
 import (
+	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 	"net/url"
 	"os"
+	"slices"
+	"strings"
+	"time"
+	"unicode"
+)
+
+const (
+	requestTimeout = 15 * time.Second
+	maxRedirects   = 5
 )
 
 // Set at build time via -ldflags "-X main.build=... -X main.commit=... -X main.date=...".
@@ -61,19 +72,52 @@ func versionString() string {
 	return fmt.Sprintf("hhaudit %s (commit %s, built %s)", build, commit, date)
 }
 
-func scan(target *url.URL) (http.Header, error) {
-	fmt.Printf("Target: %s\n\n", target.String())
+func newClient() *http.Client {
+	return &http.Client{
+		Timeout: requestTimeout,
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			if len(via) >= maxRedirects {
+				return fmt.Errorf("stopped after %d redirects", maxRedirects)
+			}
+			return checkScheme(req.URL)
+		},
+	}
+}
 
-	resp, err := http.Head(target.String())
+func scan(client *http.Client, target *url.URL) (http.Header, error) {
+	fmt.Printf("Target: %s\n", target.String())
+
+	resp, err := client.Head(target.String())
 	if err != nil {
 		return nil, err
 	}
+	defer func() { _ = resp.Body.Close() }()
+
+	// Report the URL whose headers are actually being audited
+	fmt.Printf("Final URL: %s\n\n", resp.Request.URL.String())
 
 	return resp.Header, nil
 }
 
+func checkScheme(u *url.URL) error {
+	if u.Scheme != "http" && u.Scheme != "https" {
+		return fmt.Errorf("unsupported URL scheme %q: only http and https are allowed", u.Scheme)
+	}
+	return nil
+}
+
 func getURL(rawurl *string) (*url.URL, error) {
-	return url.ParseRequestURI(*rawurl)
+	u, err := url.ParseRequestURI(*rawurl)
+	if err != nil {
+		return nil, err
+	}
+	if err := checkScheme(u); err != nil {
+		return nil, err
+	}
+	if u.Host == "" {
+		return nil, errors.New("URL has no host")
+	}
+	return u, nil
 }
 
 func audit(kb map[string]Header, tgH http.Header) error {
@@ -92,14 +136,30 @@ func populateData() (map[string]Header, error) {
 	return kb, nil
 }
 
-func dumpHeaders(hd http.Header) {
-	for h, v := range hd {
-		fmt.Printf("%s: ", h)
-		for vv := range v {
-			fmt.Printf("%s", v[vv])
+// sanitize replaces control characters (including ANSI escape introducers)
+// so untrusted header values cannot manipulate the terminal.
+func sanitize(s string) string {
+	return strings.Map(func(r rune) rune {
+		if unicode.IsControl(r) {
+			return unicode.ReplacementChar
 		}
-		fmt.Println()
+		return r
+	}, s)
+}
+
+func dumpHeaders(w io.Writer, hd http.Header) error {
+	names := make([]string, 0, len(hd))
+	for h := range hd {
+		names = append(names, h)
 	}
+	slices.Sort(names)
+
+	for _, h := range names {
+		if _, err := fmt.Fprintf(w, "%s: %s\n", sanitize(h), sanitize(strings.Join(hd[h], ", "))); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func main() {
@@ -126,13 +186,17 @@ func main() {
 	}
 
 	var tgH http.Header
-	tgH, err = scan(target)
+	tgH, err = scan(newClient(), target)
 	if err != nil {
 		slog.Error(err.Error(), "sys", "scan")
 		os.Exit(1)
 	}
 
-	dumpHeaders(tgH)
+	err = dumpHeaders(os.Stdout, tgH)
+	if err != nil {
+		slog.Error(err.Error(), "sys", "output")
+		os.Exit(1)
+	}
 
 	err = audit(kb, tgH)
 	if err != nil {
