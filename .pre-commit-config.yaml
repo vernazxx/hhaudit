@@ -1,3 +1,6 @@
+# Install both stages with a plain `pre-commit install`
+default_install_hook_types: [pre-commit, commit-msg]
+
 repos:
 - repo: https://github.com/returntocorp/semgrep
   rev: '2f122b2feb38cc06272b1dde5b482e85eaf3adad'  # frozen: v1.178.0
@@ -15,3 +18,7 @@ repos:
   hooks:
     - id: golangci-lint-full
       args: ['-E', 'gosec']
+- repo: https://github.com/commitizen-tools/commitizen
+  rev: 0c19a2b41e5514bc74f36c3eed4de554f989b666  # frozen: v4.19.1
+  hooks:
+    - id: commitizen
