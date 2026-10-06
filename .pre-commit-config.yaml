@@ -1,16 +1,16 @@
 repos:
 - repo: https://github.com/returntocorp/semgrep
-  rev: 'v1.65.0'
+  rev: 'f0de20ae7f8a50f8e7c6e64474b55c0f59ddf69c'  # frozen: v1.165.0
   hooks:
     - id: semgrep
       args: ['--config', 'p/default', '--error']
 - repo: https://github.com/Yelp/detect-secrets
-  rev: v1.4.0
+  rev: 68e8b45440415753fff70a312ece8da92ba85b4a  # frozen: v1.5.0
   hooks:
     - id: detect-secrets
       args: ['--baseline', '.secrets.baseline']
 - repo: https://github.com/golangci/golangci-lint
-  rev: v1.58.1
+  rev: 793d05316077345337ae9a11ae05ec8f23edfe1b  # frozen: v2.14.0
   hooks:
     - id: golangci-lint-full
       args: ['-E', 'gosec']
