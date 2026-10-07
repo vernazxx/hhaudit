@@ -7,7 +7,7 @@ import (
 	"log/slog"
 	"os"
 
-	"hhaudit/audit"
+	"github.com/vernazxx/hhaudit/audit"
 )
 
 // Set at build time via -ldflags "-X main.build=... -X main.commit=... -X main.date=...".
