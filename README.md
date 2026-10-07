@@ -25,6 +25,29 @@ Usage of bin/hhaudit:
         The URL of the target website to audit (default "http://example.com")
 ```
 
+### As a library
+
+All functionality lives in the `audit` package; `main.go` is only the CLI entrypoint.
+
+```go
+target, err := audit.ParseTarget("https://example.com")
+if err != nil {
+	return err
+}
+client, err := audit.NewClient(audit.DefaultTimeout, audit.DefaultMaxRedirects)
+if err != nil {
+	return err
+}
+res, err := audit.Scan(ctx, client, target)
+if err != nil {
+	return err
+}
+fmt.Println("Final URL:", res.Final)
+err = audit.DumpHeaders(os.Stdout, res.Header) // sanitizes control characters
+```
+
+Inputs are validated at every entry point; invalid input returns errors you can match with `errors.Is` (`audit.ErrUnsupportedScheme`, `audit.ErrNoHost`, `audit.ErrNilClient`, `audit.ErrNilTarget`, `audit.ErrNilWriter`, `audit.ErrInvalidOption`).
+
 ## Local development
 
 ### Install requirements
