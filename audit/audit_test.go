@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"hhaudit/audit"
+	"github.com/vernazxx/hhaudit/audit"
 )
 
 func TestParseTarget(t *testing.T) {

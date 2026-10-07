@@ -29,7 +29,13 @@ Usage of bin/hhaudit:
 
 All functionality lives in the `audit` package; `main.go` is only the CLI entrypoint.
 
+```sh
+go get github.com/vernazxx/hhaudit/audit
+```
+
 ```go
+import "github.com/vernazxx/hhaudit/audit"
+
 target, err := audit.ParseTarget("https://example.com")
 if err != nil {
 	return err

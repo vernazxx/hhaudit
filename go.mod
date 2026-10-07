@@ -1,4 +1,4 @@
-module hhaudit
+module github.com/vernazxx/hhaudit
 
 go 1.27.1
 
