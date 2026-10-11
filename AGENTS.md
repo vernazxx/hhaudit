@@ -34,7 +34,7 @@ Before declaring any change done, run at minimum: `make fmt && make lint && make
 ## CI/CD map
 
 - `.github/workflows/code-checker.yaml` — on PR, push to `main`, and merge queue: govulncheck, golangci-lint v2.14.0 (incl. gosec, via `.golangci.yml`), gofmt check, semgrep (in a digest-pinned container), `go mod tidy` drift check.
-- `.github/workflows/release.yaml` — on `v*` tag push: GoReleaser builds linux/darwin amd64 and publishes a GitHub release using `GITHUB_TOKEN` with `contents: write`.
+- `.github/workflows/release.yaml` — on `v*` tag push: GoReleaser (pinned version, never `latest`) builds linux/darwin amd64 and publishes a GitHub release using `GITHUB_TOKEN` with `contents: write`.
 - `.github/dependabot.yml` — weekly (Mon 09:00 Europe/Lisbon) grouped updates for GitHub Actions (`ci:` prefix) and Go modules (`fix:` prefix).
 - `.github/CODEOWNERS` — `@vernazxx` owns everything; all changes need their review.
 - Releases are cut by humans with **signed** tags: `git tag -s -m "Release vN.N.N" vN.N.N HEAD`. Never create or push tags yourself.
