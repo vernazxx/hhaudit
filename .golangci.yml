@@ -1,0 +1,9 @@
+version: "2"
+
+linters:
+  # Keep golangci-lint's standard set and add gosec. gosec findings are
+  # blockers (see AGENTS.md); this file makes CI, `make lint` and pre-commit
+  # enable it without relying on per-caller `-E gosec` flags.
+  default: standard
+  enable:
+    - gosec

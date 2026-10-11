@@ -20,7 +20,7 @@ Current state (verify before relying on it — the code is early-stage):
 | Full local gate | `make all` | build + govulncheck + semgrep |
 | Build (release flags) | `make build` | runs tidy, fmt, lint, test first; `CGO_ENABLED=0`, PIE, `-trimpath`, `-mod=readonly`, stripped |
 | Tests | `make test` | `go test -cover` |
-| Lint | `make lint` | `golangci-lint run -E gosec` |
+| Lint | `make lint` | `golangci-lint run -E gosec`; linters (incl. gosec) are configured in `.golangci.yml` |
 | Format | `make fmt` | `gofmt -s -w .` — CI fails on any diff |
 | Vulnerable deps | `make govulncheck` | |
 | SAST | `make semgrep` | `semgrep --config p/default --error` |
@@ -33,7 +33,7 @@ Before declaring any change done, run at minimum: `make fmt && make lint && make
 
 ## CI/CD map
 
-- `.github/workflows/code-checker.yaml` — on PR, push to `main`, and merge queue: govulncheck, golangci-lint, gofmt check, semgrep (in a digest-pinned container), `go mod tidy` drift check.
+- `.github/workflows/code-checker.yaml` — on PR, push to `main`, and merge queue: govulncheck, golangci-lint v2.14.0 (incl. gosec, via `.golangci.yml`), gofmt check, semgrep (in a digest-pinned container), `go mod tidy` drift check.
 - `.github/workflows/release.yaml` — on `v*` tag push: GoReleaser builds linux/darwin amd64 and publishes a GitHub release using `GITHUB_TOKEN` with `contents: write`.
 - `.github/dependabot.yml` — weekly (Mon 09:00 Europe/Lisbon) grouped updates for GitHub Actions (`ci:` prefix) and Go modules (`fix:` prefix).
 - `.github/CODEOWNERS` — `@vernazxx` owns everything; all changes need their review.
