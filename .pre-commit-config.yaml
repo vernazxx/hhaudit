@@ -8,17 +8,17 @@ repos:
     - id: semgrep
       args: ['--config', 'p/default', '--error']
 - repo: https://github.com/Yelp/detect-secrets
-  rev: 68e8b45440415753fff70a312ece8da92ba85b4a  # frozen: v1.5.0
+  rev: 01886c8a910c64595c47f186ca1ffc0b77fa5458  # frozen: v1.5.0
   hooks:
     - id: detect-secrets
       # The baseline excludes frozen `rev:` lines (public git SHAs, not secrets)
       args: ['--baseline', '.secrets.baseline']
 - repo: https://github.com/golangci/golangci-lint
-  rev: 793d05316077345337ae9a11ae05ec8f23edfe1b  # frozen: v2.14.0
+  rev: 114493f9b3e7257d29e4130f2b4a4aadefbb6845  # frozen: v2.14.0
   hooks:
     - id: golangci-lint-full
       args: ['-E', 'gosec']
 - repo: https://github.com/commitizen-tools/commitizen
-  rev: 0c19a2b41e5514bc74f36c3eed4de554f989b666  # frozen: v4.19.1
+  rev: b2eb0cb7a4efa0e5d85f70d76379cda1194fa72b  # frozen: v4.19.1
   hooks:
     - id: commitizen
