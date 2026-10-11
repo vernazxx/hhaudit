@@ -72,20 +72,22 @@ jobs:
             exit 1
           fi
 
-  semgrep:
-    name: Semgrep
+  sast:
+    name: SAST (opengrep)
     runs-on: ubuntu-latest
-    container:
-      image: returntocorp/semgrep@sha256:078d5dae9b2184f710cb7fc5228036147699e787dd0ac838ab91cae7083689bb
-    # Skip any PR created by dependabot and any check triggered by merge group
-    if: (github.actor != 'dependabot[bot]') && (github.event_name != 'merge_group')
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Run Semgrep Rules
-        id: semgrep
-        run: semgrep --config 'p/default' --error
+      - name: Install cosign
+        uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6 # v4.1.2
+        with:
+          cosign-release: v3.1.3
+      - name: Install opengrep (checksum + signature verified)
+        # Version and sha256 are pinned in the Makefile
+        run: make opengrep-install OPENGREP_DIR="${RUNNER_TEMP}/opengrep"
+      - name: Run opengrep
+        run: make sast OPENGREP="${RUNNER_TEMP}/opengrep/opengrep"
 
   gomod:
     name: Go mod checks

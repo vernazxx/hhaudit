@@ -2,11 +2,14 @@
 default_install_hook_types: [pre-commit, commit-msg]
 
 repos:
-- repo: https://github.com/returntocorp/semgrep
-  rev: 'a35fe8306115b3e55274969098cc46f8451d6b4d'  # frozen: v1.180.0
+# Same pinned rules and opengrep version as CI; needs opengrep on PATH (see README)
+- repo: local
   hooks:
-    - id: semgrep
-      args: ['--config', 'p/default', '--error']
+    - id: opengrep
+      name: opengrep (make sast)
+      entry: make sast
+      language: system
+      pass_filenames: false
 - repo: https://github.com/Yelp/detect-secrets
   rev: 01886c8a910c64595c47f186ca1ffc0b77fa5458  # frozen: v1.5.0
   hooks:
