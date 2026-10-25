@@ -3,7 +3,7 @@ default_install_hook_types: [pre-commit, commit-msg]
 
 repos:
 - repo: https://github.com/returntocorp/semgrep
-  rev: '2f122b2feb38cc06272b1dde5b482e85eaf3adad'  # frozen: v1.178.0
+  rev: 'a35fe8306115b3e55274969098cc46f8451d6b4d'  # frozen: v1.180.0
   hooks:
     - id: semgrep
       args: ['--config', 'p/default', '--error']
@@ -19,6 +19,6 @@ repos:
     - id: golangci-lint-full
       args: ['-E', 'gosec']
 - repo: https://github.com/commitizen-tools/commitizen
-  rev: b2eb0cb7a4efa0e5d85f70d76379cda1194fa72b  # frozen: v4.19.1
+  rev: 57217c394fff5064bedd48421fe4b6f5f73aad47  # frozen: v4.19.2
   hooks:
     - id: commitizen
