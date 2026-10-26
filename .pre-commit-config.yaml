@@ -3,7 +3,7 @@ default_install_hook_types: [pre-commit, commit-msg]
 
 repos:
 - repo: https://github.com/returntocorp/semgrep
-  rev: 'a35fe8306115b3e55274969098cc46f8451d6b4d'  # frozen: v1.180.0
+  rev: '72d3525fe7e02f486428386078f192f8c4756804'  # frozen: v1.181.0
   hooks:
     - id: semgrep
       args: ['--config', 'p/default', '--error']
@@ -14,7 +14,7 @@ repos:
       # The baseline excludes frozen `rev:` lines (public git SHAs, not secrets)
       args: ['--baseline', '.secrets.baseline']
 - repo: https://github.com/golangci/golangci-lint
-  rev: 114493f9b3e7257d29e4130f2b4a4aadefbb6845  # frozen: v2.14.0
+  rev: 25c5369a93aacb8cccea0d46e1569ca4a194564d  # frozen: v2.15.0
   hooks:
     - id: golangci-lint-full
       args: ['-E', 'gosec']
