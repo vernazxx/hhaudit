@@ -27,6 +27,7 @@ Current state (verify before relying on it — the code is early-stage):
 | Secrets scan | `detect-secrets-hook --baseline .secrets.baseline $(git ls-files)` | |
 | Pre-commit (all hooks) | `pre-commit run --all-files` | opengrep (`make sast`), detect-secrets, golangci-lint |
 | Snapshot release | `make local-release` | goreleaser `--snapshot`, nothing published |
+| Release (humans only) | `make release VERSION=vX.Y.Z` | preflight checks, `make all`, signed tag, confirm, pushes only that tag. Agents never run it |
 | Run | `go run main.go -u https://example.com` | makes a real network request |
 
 Before declaring any change done, run at minimum: `make fmt && make lint && make test && make govulncheck && make sast`, and the detect-secrets hook. Report failures verbatim; do not suppress them to get green.
@@ -37,7 +38,7 @@ Before declaring any change done, run at minimum: `make fmt && make lint && make
 - `.github/workflows/release.yaml` — on `v*` tag push: GoReleaser (pinned version, never `latest`) builds linux/darwin amd64 and publishes a GitHub release using `GITHUB_TOKEN` with `contents: write` scoped to that job (workflow default `contents: read`), no persisted checkout credentials and no Go build cache.
 - `.github/dependabot.yml` — weekly (Mon 09:00 Europe/Lisbon) grouped updates for GitHub Actions (`ci:` prefix) and Go modules (`fix:` prefix).
 - `.github/CODEOWNERS` — `@vernazxx` owns everything; all changes need their review.
-- Releases are cut by humans with **signed** tags: `git tag -s -m "Release vN.N.N" vN.N.N HEAD`. Never create or push tags yourself.
+- Releases are cut by humans with **signed** tags via `make release VERSION=vN.N.N` (`scripts/release.sh`). Never create or push tags yourself, and never run `make release`.
 
 ## Security engineering rules
 

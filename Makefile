@@ -21,6 +21,7 @@ help:
 	@echo "  build          to build the binary for production mode"
 	@echo "  build-dev      to build the binary for development mode"
 	@echo "  local-release  to create a local release"
+	@echo "  release        to tag and publish a release: make release VERSION=vX.Y.Z"
 	@echo "  tidy           to ensure go.mod matches the source in the module"
 	@echo "  tidy-ci        to fail if 'make tidy' would change go.mod/go.sum"
 	@echo "  fmt            to run the formatter on Go code"
@@ -44,6 +45,13 @@ build-dev: tidy fmt lint test
 .PHONY: local-release
 local-release: tidy fmt lint test
 	goreleaser release --snapshot --clean
+
+.PHONY: release
+release:
+	@test -n "$(VERSION)" || (echo "usage: make release VERSION=vX.Y.Z"; exit 1)
+	scripts/release.sh check $(VERSION)
+	$(MAKE) all
+	scripts/release.sh tag $(VERSION)
 
 .PHONY: tidy
 tidy:
