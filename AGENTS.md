@@ -33,7 +33,7 @@ Before declaring any change done, run at minimum: `make fmt && make lint && make
 
 ## CI/CD map
 
-- `.github/workflows/code-checker.yaml` — on PR, push to `main`, and merge queue: govulncheck, golangci-lint v2.14.0 (incl. gosec, via `.golangci.yml`), gofmt check, opengrep SAST (release binary verified by sha256 + cosign signature), `go mod tidy` drift check.
+- `.github/workflows/code-checker.yaml` — on PR, push to `main`, and merge queue: govulncheck, golangci-lint v2.15.0 (incl. gosec, via `.golangci.yml`), gofmt check, opengrep SAST (release binary verified by sha256 + cosign signature), `go mod tidy` drift check.
 - `.github/workflows/release.yaml` — on `v*` tag push: GoReleaser (pinned version, never `latest`) builds linux/darwin amd64 and publishes a GitHub release using `GITHUB_TOKEN` with `contents: write` scoped to that job (workflow default `contents: read`), no persisted checkout credentials and no Go build cache.
 - `.github/dependabot.yml` — weekly (Mon 09:00 Europe/Lisbon) grouped updates for GitHub Actions (`ci:` prefix) and Go modules (`fix:` prefix).
 - `.github/CODEOWNERS` — `@vernazxx` owns everything; all changes need their review.
