@@ -141,14 +141,15 @@ make build
 
 ## Releases
 
-Releases are done using the GoReleaser [GitHub action][GoReleaser GitHub action] when a new tag is added.
-
-Example:
+Releases are done using the GoReleaser [GitHub action][GoReleaser GitHub action] when a `v*` tag is pushed. Cut one from an up-to-date, clean `main` with:
 
 ```sh
-git tag -s -m "Release vN.N.N" vN.N.N HEAD
-git push --tags
+make release VERSION=vN.N.N
 ```
+
+This checks the version format, that you're on `main` at `origin/main` with no uncommitted changes, and that the tag doesn't exist yet. It then runs the full local gate (`make all`), creates a signed tag, verifies the signature, asks for confirmation, and pushes only that tag. Expect three key touches with a hardware signing key: fetching, signing and pushing. Answering anything but `y` deletes the local tag and pushes nothing.
+
+Don't use `git push --tags`: it pushes every local tag, and each `v*` tag starts a release.
 
 ## More information
 
