@@ -47,11 +47,16 @@ jobs:
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version-file: './go.mod'
+      - name: Read golangci-lint version from pre-commit
+        id: golangci-version
+        # Same version as the pre-commit hook; fails if its rev SHA isn't the tag's commit
+        run: |
+          version=$(scripts/golangci-lint-version.sh)
+          echo "version=$version" >> "$GITHUB_OUTPUT"
       - name: golangci-lint
         uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
         with:
-          # Keep in sync with the golangci-lint `rev:` in .pre-commit-config.yaml
-          version: v2.15.0
+          version: ${{ steps.golangci-version.outputs.version }}
 
   format:
     name: Format
