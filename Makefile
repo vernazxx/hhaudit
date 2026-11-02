@@ -9,7 +9,7 @@ OPENGREP_RULES_SHA := f1d2b562b414783763fd02a6ed2736eaed622efa
 TOB_RULES_SHA := 31390b3a99c04c81522d1b37c8d1900aa2dd4094
 SAST_CACHE ?= $(or $(XDG_CACHE_HOME),$(HOME)/.cache)/hhaudit/sast-rules
 OPENGREP_RULES := $(SAST_CACHE)/opengrep-rules-$(OPENGREP_RULES_SHA)
-TOB_RULES := $(SAST_CACHE)/trailofbits-semgrep-rules-$(TOB_RULES_SHA)
+TOB_RULES := $(SAST_CACHE)/trailofbits-rules-$(TOB_RULES_SHA)
 
 .PHONY: all
 all: build govulncheck sast

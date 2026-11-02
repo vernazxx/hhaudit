@@ -44,7 +44,7 @@ Before declaring any change done, run at minimum: `make fmt && make lint && make
 ### Supply chain
 - **Pin every GitHub Action to a full commit SHA** with a trailing `# vX.Y.Z` comment. Never use `@vN` or `@main`. Pin container images by `@sha256:` digest.
 - When touching a pinned SHA, verify it actually corresponds to the claimed tag (e.g. `gh api repos/<owner>/<repo>/git/ref/tags/<tag>`); do not trust the comment.
-- SAST rules come only from SHA-pinned sources (`Makefile`), never the Semgrep registry (`p/...`, `--config auto`): registry rules are unpinned and pull telemetry. `OPENGREP_VERSION` and `OPENGREP_SHA256` live in the `Makefile`; bump them together (re-verify with `make opengrep-install`). Dependabot can't track them.
+- SAST rules come only from SHA-pinned sources (`Makefile`), never a remote rule registry (`p/...` packs, `--config auto`): registry rules are unpinned and fetching them sends telemetry. `OPENGREP_VERSION` and `OPENGREP_SHA256` live in the `Makefile`; bump them together (re-verify with `make opengrep-install`). Dependabot can't track them.
 - Avoid `@latest` in anything that runs in CI or release. Prefer versions pinned in `go.mod` (`go tool govulncheck`) over `go run …@latest`.
 - Do not add dependencies, actions, or pre-commit hooks from unknown publishers. Explain provenance in the PR.
 - Review Dependabot PRs as untrusted input: read the upstream changelog/diff for major bumps, confirm the SHA, check for new permissions or network behaviour.
