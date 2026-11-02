@@ -17,23 +17,23 @@ Current state (verify before relying on it — the code is early-stage):
 
 | Task | Command | Notes |
 |---|---|---|
-| Full local gate | `make all` | build + govulncheck + semgrep |
+| Full local gate | `make all` | build + govulncheck + sast |
 | Build (release flags) | `make build` | runs tidy, fmt, lint, test first; `CGO_ENABLED=0`, PIE, `-trimpath`, `-mod=readonly`, stripped |
 | Tests | `make test` | `go test -cover` |
 | Lint | `make lint` | `golangci-lint run -E gosec`; linters (incl. gosec) are configured in `.golangci.yml` |
 | Format | `make fmt` | `gofmt -s -w .` — CI fails on any diff |
 | Vulnerable deps | `make govulncheck` | |
-| SAST | `make semgrep` | `semgrep --config p/default --error` |
+| SAST | `make sast` | opengrep (pinned `OPENGREP_VERSION`) with pinned rule sets: opengrep-rules `go` + `generic/secrets`, trailofbits `go`, and project rules in `.opengrep/` (tested with `opengrep test`) |
 | Secrets scan | `detect-secrets-hook --baseline .secrets.baseline $(git ls-files)` | |
-| Pre-commit (all hooks) | `pre-commit run --all-files` | semgrep, detect-secrets, golangci-lint |
+| Pre-commit (all hooks) | `pre-commit run --all-files` | opengrep (`make sast`), detect-secrets, golangci-lint |
 | Snapshot release | `make local-release` | goreleaser `--snapshot`, nothing published |
 | Run | `go run main.go -u https://example.com` | makes a real network request |
 
-Before declaring any change done, run at minimum: `make fmt && make lint && make test && make govulncheck && make semgrep`, and the detect-secrets hook. Report failures verbatim; do not suppress them to get green.
+Before declaring any change done, run at minimum: `make fmt && make lint && make test && make govulncheck && make sast`, and the detect-secrets hook. Report failures verbatim; do not suppress them to get green.
 
 ## CI/CD map
 
-- `.github/workflows/code-checker.yaml` — on PR, push to `main`, and merge queue: govulncheck, golangci-lint v2.14.0 (incl. gosec, via `.golangci.yml`), gofmt check, semgrep (in a digest-pinned container), `go mod tidy` drift check.
+- `.github/workflows/code-checker.yaml` — on PR, push to `main`, and merge queue: govulncheck, golangci-lint v2.14.0 (incl. gosec, via `.golangci.yml`), gofmt check, opengrep SAST (release binary verified by sha256 + cosign signature), `go mod tidy` drift check.
 - `.github/workflows/release.yaml` — on `v*` tag push: GoReleaser (pinned version, never `latest`) builds linux/darwin amd64 and publishes a GitHub release using `GITHUB_TOKEN` with `contents: write` scoped to that job (workflow default `contents: read`), no persisted checkout credentials and no Go build cache.
 - `.github/dependabot.yml` — weekly (Mon 09:00 Europe/Lisbon) grouped updates for GitHub Actions (`ci:` prefix) and Go modules (`fix:` prefix).
 - `.github/CODEOWNERS` — `@vernazxx` owns everything; all changes need their review.
@@ -44,6 +44,7 @@ Before declaring any change done, run at minimum: `make fmt && make lint && make
 ### Supply chain
 - **Pin every GitHub Action to a full commit SHA** with a trailing `# vX.Y.Z` comment. Never use `@vN` or `@main`. Pin container images by `@sha256:` digest.
 - When touching a pinned SHA, verify it actually corresponds to the claimed tag (e.g. `gh api repos/<owner>/<repo>/git/ref/tags/<tag>`); do not trust the comment.
+- SAST rules come only from SHA-pinned sources (`Makefile`), never a remote rule registry (`p/...` packs, `--config auto`): registry rules are unpinned and fetching them sends telemetry. `OPENGREP_VERSION` and `OPENGREP_SHA256` live in the `Makefile`; bump them together (re-verify with `make opengrep-install`). Dependabot can't track them.
 - Avoid `@latest` in anything that runs in CI or release. Prefer versions pinned in `go.mod` (`go tool govulncheck`) over `go run …@latest`.
 - Do not add dependencies, actions, or pre-commit hooks from unknown publishers. Explain provenance in the PR.
 - Review Dependabot PRs as untrusted input: read the upstream changelog/diff for major bumps, confirm the SHA, check for new permissions or network behaviour.

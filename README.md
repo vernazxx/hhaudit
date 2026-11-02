@@ -61,9 +61,7 @@ Inputs are validated at every entry point; invalid input returns errors you can 
 #### Arch
 
 ```sh
-sudo pacman -S pre-commit
-yay -Sy semgrep-bin
-pipx install semgrep
+sudo pacman -S pre-commit cosign
 pipx install detect-secrets
 yay -S golangci-lint
 ```
@@ -71,8 +69,21 @@ yay -S golangci-lint
 #### macOS
 
 ```sh
-brew install pre-commit semgrep detect-secrets golangci-lint
+brew install pre-commit cosign detect-secrets golangci-lint
 ```
+
+#### opengrep
+
+SAST runs [opengrep] at the version pinned in the `Makefile` (`OPENGREP_VERSION`, `OPENGREP_SHA256`). On Linux x86_64, install it with:
+
+```sh
+make opengrep-install            # downloads, checks sha256 + cosign signature
+export PATH="$HOME/.cache/hhaudit/opengrep-v1.30.1:$PATH"
+```
+
+On other platforms, download the matching asset of that release and verify it the same way as `scripts/install-opengrep.sh` (`cosign verify-blob` with certificate identity `https://github.com/opengrep/opengrep/.github/workflows/rolling-release.yml@refs/heads/release-<version>` and issuer `https://token.actions.githubusercontent.com`).
+
+`make sast` fetches the rule sets at pinned commits into `~/.cache/hhaudit/sast-rules/`, runs the tests for the project rules in `.opengrep/`, and scans the repository.
 
 ### Pre-commit hook
 
@@ -82,7 +93,7 @@ brew install pre-commit semgrep detect-secrets golangci-lint
 pre-commit install
 ```
 
-This installs both the `pre-commit` hooks (semgrep, detect-secrets, golangci-lint) and a `commit-msg` hook that checks commit messages with [commitizen]. Messages must follow the [commitizen commit guide][commitizen writing commits], e.g. `fix(make): correct build-dev target name`.
+This installs both the `pre-commit` hooks (opengrep via `make sast`, detect-secrets, golangci-lint) and a `commit-msg` hook that checks commit messages with [commitizen]. Messages must follow the [commitizen commit guide][commitizen writing commits], e.g. `fix(make): correct build-dev target name`.
 
 #### Run
 
@@ -142,14 +153,14 @@ git push --tags
 ## More information
 
 * [pre-commit]
-* [Semgrep]
+* [opengrep]
 * [commitizen]
 * [detect-secrets]
 * [GoReleaser]
 * [GoReleaser GitHub action]
 
 
-[Semgrep]: https://semgrep.dev/
+[opengrep]: https://github.com/opengrep/opengrep
 [commitizen]: https://commitizen-tools.github.io/commitizen/
 [commitizen writing commits]: https://commitizen-tools.github.io/commitizen/tutorials/writing_commits/
 [pre-commit]: https://pre-commit.com/
