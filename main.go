@@ -40,7 +40,6 @@ func fatal(err error, sys string) {
 }
 
 func main() {
-	printBanner()
 	rawurl := flag.String("u", "http://example.com", "The URL of the target website to audit")
 	showVersion := flag.Bool("version", false, "Print version information and exit")
 	flag.Parse()
@@ -49,6 +48,8 @@ func main() {
 		fmt.Println(versionString())
 		return
 	}
+
+	printBanner()
 
 	target, err := audit.ParseTarget(*rawurl)
 	if err != nil {
