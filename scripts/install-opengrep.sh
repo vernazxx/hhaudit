@@ -8,7 +8,7 @@
 # release workflow for exactly <version>.
 set -euo pipefail
 
-version=${1:?version, e.g. v1.30.1}
+version=${1:?version, e.g. v1.33.1}
 sha256=${2:?sha256 of the release binary}
 dir=${3:?install dir}
 

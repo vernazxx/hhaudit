@@ -78,7 +78,7 @@ SAST runs [opengrep] at the version pinned in the `Makefile` (`OPENGREP_VERSION`
 
 ```sh
 make opengrep-install            # downloads, checks sha256 + cosign signature
-export PATH="$HOME/.cache/hhaudit/opengrep-v1.30.1:$PATH"
+export PATH="$HOME/.cache/hhaudit/opengrep-v1.33.1:$PATH"
 ```
 
 On other platforms, download the matching asset of that release and verify it the same way as `scripts/install-opengrep.sh` (`cosign verify-blob` with certificate identity `https://github.com/opengrep/opengrep/.github/workflows/rolling-release.yml@refs/heads/release-<version>` and issuer `https://token.actions.githubusercontent.com`).

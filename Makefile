@@ -1,9 +1,9 @@
 # SAST: opengrep with every rule source pinned (see AGENTS.md). Dependabot
 # can't bump these; update them deliberately and re-verify.
 OPENGREP ?= opengrep
-OPENGREP_VERSION := v1.30.1
+OPENGREP_VERSION := v1.33.1
 # sha256 of the opengrep_manylinux_x86 asset of OPENGREP_VERSION
-OPENGREP_SHA256 := d3195b9d8d5ae93179f6aa5f5daaba6a920a5a09d38c5d5ae5e60924050210c4
+OPENGREP_SHA256 := 46e8133cc490f9f50518061590ce2f6be5a08afaeda034471c0ceda4b3899808
 OPENGREP_DIR ?= $(or $(XDG_CACHE_HOME),$(HOME)/.cache)/hhaudit/opengrep-$(OPENGREP_VERSION)
 OPENGREP_RULES_SHA := f1d2b562b414783763fd02a6ed2736eaed622efa
 TOB_RULES_SHA := 31390b3a99c04c81522d1b37c8d1900aa2dd4094
