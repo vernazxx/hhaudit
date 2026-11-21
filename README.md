@@ -10,19 +10,21 @@ Other projects with similar goals as `hhaudit`:
 
 ## Usage
 
-If you want to see if the tool is working, just run it.
+Pass the URL to audit with `-u`. With no flags it audits `http://example.com`.
 
 ```sh
- __     __                   __ __ __
-|  |--.|  |--.---.-.--.--.--|  |__|  |_
-|     ||     |  _  |  |  |  _  |  |   _|
-|__|__||__|__|___._|_____|_____|__|____|
+hhaudit -u https://example.com
+```
 
-:: Audit those HTTP headers ::
+It prints a banner, the target and the final URL after redirects, then the response headers, sorted and with control characters replaced.
 
-Usage of bin/hhaudit:
+```console
+$ hhaudit -h
+Usage of hhaudit:
   -u string
-        The URL of the target website to audit (default "http://example.com")
+    	The URL of the target website to audit (default "http://example.com")
+  -version
+    	Print version information and exit
 ```
 
 ### As a library
