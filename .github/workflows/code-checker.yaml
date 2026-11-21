@@ -107,8 +107,8 @@ jobs:
         with:
           # Pinned instead of `latest`; bump deliberately (Dependabot doesn't track this)
           version: 1.31.1
-          # Code scanning (SARIF upload) isn't available on this private repo;
-          # report findings as PR annotations and fail the job instead
+          # Annotations rather than SARIF upload: works on fork PRs (whose token
+          # can't get security-events: write) and fails the job on findings
           advanced-security: false
           annotations: true
 
