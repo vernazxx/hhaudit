@@ -151,6 +151,21 @@ This checks the version format, that you're on `main` at `origin/main` with no u
 
 Don't use `git push --tags`: it pushes every local tag, and each `v*` tag starts a release.
 
+### Verifying a release
+
+Each release includes `hhaudit_X.Y.Z_checksums.txt` and a keyless [cosign] signature bundle for it, `hhaudit_X.Y.Z_checksums.txt.sigstore.json`. The signature is tied to this repository's release workflow running for that tag, and is recorded in Sigstore's public transparency log. Download the archive, the checksums file and the bundle, then run the commands below. They need cosign v3 or later, which reads this bundle format by default:
+
+```sh
+cosign verify-blob \
+  --bundle hhaudit_X.Y.Z_checksums.txt.sigstore.json \
+  --certificate-identity "https://github.com/vernazxx/hhaudit/.github/workflows/release.yaml@refs/tags/vX.Y.Z" \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  hhaudit_X.Y.Z_checksums.txt
+sha256sum --ignore-missing -c hhaudit_X.Y.Z_checksums.txt
+```
+
+Both commands must succeed. The first proves the checksums file came from the release workflow; the second proves your archive matches it.
+
 ## More information
 
 * [pre-commit]
@@ -159,6 +174,7 @@ Don't use `git push --tags`: it pushes every local tag, and each `v*` tag starts
 * [detect-secrets]
 * [GoReleaser]
 * [GoReleaser GitHub action]
+* [cosign]
 
 
 [opengrep]: https://github.com/opengrep/opengrep
@@ -168,6 +184,7 @@ Don't use `git push --tags`: it pushes every local tag, and each `v*` tag starts
 [detect-secrets]: https://github.com/Yelp/detect-secrets
 [GoReleaser]: https://goreleaser.com/
 [GoReleaser GitHub action]: https://github.com/goreleaser/goreleaser-action
+[cosign]: https://docs.sigstore.dev/cosign/signing/overview/
 [OWASP Secure Headers Project]: https://owasp.org/www-project-secure-headers/
 [OWASP HTTP Security Response Headers Cheat Sheet]: https://cheatsheetseries.owasp.org/cheatsheets/HTTP_Headers_Cheat_Sheet.html
 [OWASP Secure Headers Project validator]: https://github.com/oshp/oshp-validator?tab=readme-ov-file
