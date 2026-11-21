@@ -8,9 +8,9 @@ Guidance for AI agents working in this repository. You are acting as a **securit
 
 Current state (verify before relying on it — the code is early-stage):
 
-- Single package, single binary: `main.go`, tests in `main_test.go`. Module name is `hhaudit`.
-- Flow: `printBanner` → parse `-u` flag → `getURL` (`url.ParseRequestURI`) → `populateData` (in-memory knowledge base, only `Content-Type` so far) → `scan` (HTTP `HEAD` request) → `dumpHeaders` → `audit`.
-- `audit()` is a stub (`// TODO`). The knowledge base (`map[string]Header`) is the intended baseline DB.
+- Module `github.com/vernazxx/hhaudit`. `main.go` is only the CLI entrypoint (flags, banner, version, wiring); all logic is in the `audit` package (`audit/audit.go`, `audit/kb.go`, tests in `audit/audit_test.go`), which is also importable as a library.
+- Flow: parse `-u` / `-version` → `printBanner` → `audit.ParseTarget` (absolute `http`/`https` URL with a host) → `audit.KnowledgeBase` → `audit.NewClient` (timeout, redirect limit, http(s)-only redirects) → `audit.Scan` (HTTP `HEAD`, reports the final URL) → `audit.DumpHeaders` (sorted, control characters sanitized) → `audit.Audit`.
+- `audit.Audit` is a stub (`// TODO`, tracked in #87). The knowledge base (`map[string]Header` in `audit/kb.go`) is the intended baseline DB and only has `Content-Type` so far (#3, #88).
 - No third-party runtime dependencies. `go.mod` only pulls `golang.org/x/vuln` (govulncheck) as a `tool` dependency. Keep it that way unless there is a strong reason; every new dependency is attack surface and must be justified in the PR.
 
 ## Commands
