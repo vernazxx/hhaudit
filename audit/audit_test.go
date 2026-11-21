@@ -3,10 +3,12 @@ package audit_test
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"testing"
 	"time"
 
@@ -256,24 +258,162 @@ func TestSanitize(t *testing.T) {
 }
 
 func TestKnowledgeBase(t *testing.T) {
-	kb, err := audit.KnowledgeBase()
-
+	rules, err := audit.KnowledgeBase()
 	assertError(t, err, nil)
-	if len(kb) == 0 {
-		t.Fatal("knowledge base is empty")
+
+	byName := map[string]audit.Rule{}
+	for _, r := range rules {
+		byName[r.Name] = r
 	}
-	categories := []string{audit.General.String(), audit.Cache.String(), audit.Security.String()}
-	for name, h := range kb {
-		if h.Doc == "" {
-			t.Errorf("%s: empty Doc", name)
+	xcto, ok := byName["X-Content-Type-Options"]
+	if !ok {
+		t.Fatal("embedded baseline has no X-Content-Type-Options rule")
+	}
+	if xcto.Expect != audit.Present || xcto.Recommended != "nosniff" || len(xcto.Allowed) != 1 || xcto.Allowed[0] != "nosniff" {
+		t.Errorf("X-Content-Type-Options rule = %+v, want present, allowed and recommended nosniff", xcto)
+	}
+	if xcto.Category != audit.Security {
+		t.Errorf("X-Content-Type-Options category = %s want security", xcto.Category)
+	}
+	for _, r := range rules {
+		for _, s := range r.Sources {
+			if !strings.HasPrefix(s, "https://") {
+				t.Errorf("%s: source %q is not https", r.Name, s)
+			}
 		}
-		valid := false
-		for _, c := range categories {
-			valid = valid || h.Category == c
+	}
+}
+
+// ruleJSON returns a valid present rule as JSON, with fields overridden by extra.
+func ruleJSON(t testing.TB, extra map[string]any) string {
+	t.Helper()
+
+	r := map[string]any{
+		"name":        "X-Test",
+		"category":    "security",
+		"expect":      "present",
+		"allowed":     []string{"on"},
+		"recommended": "on",
+		"doc":         "Test header.",
+		"sources":     []string{"https://example.com/doc"},
+	}
+	for k, v := range extra {
+		if v == nil {
+			delete(r, k)
+			continue
 		}
-		if !valid {
-			t.Errorf("%s: invalid category %q", name, h.Category)
+		r[k] = v
+	}
+	b, err := json.Marshal(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(b)
+}
+
+func doc(rules ...string) string {
+	return `{"rules": [` + strings.Join(rules, ",") + `]}`
+}
+
+func TestLoadRules(t *testing.T) {
+	absent := ruleJSON(t, map[string]any{"name": "Server", "expect": "absent", "allowed": nil, "recommended": nil})
+	rules, err := audit.LoadRules(strings.NewReader(doc(ruleJSON(t, nil), absent)))
+	assertError(t, err, nil)
+
+	if len(rules) != 2 {
+		t.Fatalf("got %d rules want 2", len(rules))
+	}
+	// Sorted by name
+	if rules[0].Name != "Server" || rules[1].Name != "X-Test" {
+		t.Errorf("rules not sorted by name: %s, %s", rules[0].Name, rules[1].Name)
+	}
+	if rules[0].Expect != audit.Absent || rules[1].Expect != audit.Present {
+		t.Errorf("expectations = %s, %s want absent, present", rules[0].Expect, rules[1].Expect)
+	}
+	if rules[1].Category != audit.Security {
+		t.Errorf("category = %s want security", rules[1].Category)
+	}
+
+	// Allowed may be omitted: any value is accepted
+	_, err = audit.LoadRules(strings.NewReader(doc(ruleJSON(t, map[string]any{"allowed": nil}))))
+	assertError(t, err, nil)
+}
+
+func TestLoadRulesRejectsInvalid(t *testing.T) {
+	cases := []struct {
+		name string
+		in   string
+	}{
+		{"not json", "nope"},
+		{"empty rules", `{"rules": []}`},
+		{"no rules key", `{}`},
+		{"unknown top-level field", `{"rules": [], "extra": 1}`},
+		{"unknown rule field", doc(ruleJSON(t, map[string]any{"severity": "high"}))},
+		{"trailing data", doc(ruleJSON(t, nil)) + `{}`},
+		{"unknown category", doc(ruleJSON(t, map[string]any{"category": "fun"}))},
+		{"unknown expectation", doc(ruleJSON(t, map[string]any{"expect": "maybe"}))},
+		{"missing name", doc(ruleJSON(t, map[string]any{"name": nil}))},
+		{"non-canonical name", doc(ruleJSON(t, map[string]any{"name": "x-test"}))},
+		{"name with space", doc(ruleJSON(t, map[string]any{"name": "X Test"}))},
+		{"name with control character", doc(ruleJSON(t, map[string]any{"name": "X-Test\u001b"}))},
+		{"duplicate name", doc(ruleJSON(t, nil), ruleJSON(t, nil))},
+		{"empty doc", doc(ruleJSON(t, map[string]any{"doc": " "}))},
+		{"no sources", doc(ruleJSON(t, map[string]any{"sources": []string{}}))},
+		{"http source", doc(ruleJSON(t, map[string]any{"sources": []string{"http://example.com/doc"}}))},
+		{"source without host", doc(ruleJSON(t, map[string]any{"sources": []string{"https:///doc"}}))},
+		{"present without recommended", doc(ruleJSON(t, map[string]any{"recommended": nil}))},
+		{"recommended not allowed", doc(ruleJSON(t, map[string]any{"recommended": "off"}))},
+		{"absent with recommended", doc(ruleJSON(t, map[string]any{"expect": "absent", "allowed": nil}))},
+		{"absent with allowed", doc(ruleJSON(t, map[string]any{"expect": "absent", "recommended": nil}))},
+		{"too large", doc(ruleJSON(t, map[string]any{"doc": strings.Repeat("a", audit.MaxBaselineSize)}))},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := audit.LoadRules(strings.NewReader(tc.in))
+			assertErrorIs(t, err, audit.ErrInvalidBaseline)
+		})
+	}
+
+	t.Run("nil reader", func(t *testing.T) {
+		_, err := audit.LoadRules(nil)
+		assertErrorIs(t, err, audit.ErrInvalidBaseline)
+	})
+}
+
+func TestTextRoundTrip(t *testing.T) {
+	for _, c := range []audit.Category{audit.General, audit.Cache, audit.Security} {
+		b, err := c.MarshalText()
+		assertError(t, err, nil)
+		var got audit.Category
+		assertError(t, got.UnmarshalText(b), nil)
+		if got != c {
+			t.Errorf("category round trip: got %s want %s", got, c)
 		}
+	}
+	for _, e := range []audit.Expectation{audit.Present, audit.Absent} {
+		b, err := e.MarshalText()
+		assertError(t, err, nil)
+		var got audit.Expectation
+		assertError(t, got.UnmarshalText(b), nil)
+		if got != e {
+			t.Errorf("expectation round trip: got %s want %s", got, e)
+		}
+	}
+
+	if _, err := audit.Category(99).MarshalText(); err == nil {
+		t.Error("unknown category marshalled without error")
+	}
+	if _, err := audit.Expectation(99).MarshalText(); err == nil {
+		t.Error("unknown expectation marshalled without error")
+	}
+	var c audit.Category
+	if err := c.UnmarshalText([]byte("fun")); err == nil {
+		t.Error("unknown category unmarshalled without error")
+	}
+	var e audit.Expectation
+	if err := e.UnmarshalText([]byte("maybe")); err == nil {
+		t.Error("unknown expectation unmarshalled without error")
 	}
 }
 

@@ -1,0 +1,27 @@
+{
+  "rules": [
+    {
+      "name": "Content-Type",
+      "category": "general",
+      "expect": "present",
+      "recommended": "text/html; charset=UTF-8",
+      "doc": "Indicates the original media type of the resource. If it is missing or wrong, the browser may interpret the resource (for example an image) as HTML, making XSS possible. Set it to the resource's real media type, with a charset for text types.",
+      "sources": [
+        "https://cheatsheetseries.owasp.org/cheatsheets/HTTP_Headers_Cheat_Sheet.html#content-type",
+        "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Type"
+      ]
+    },
+    {
+      "name": "X-Content-Type-Options",
+      "category": "security",
+      "expect": "present",
+      "allowed": ["nosniff"],
+      "recommended": "nosniff",
+      "doc": "Tells the browser to follow the media type in Content-Type instead of guessing it. Without it, MIME type sniffing can turn non-executable content into executable content (MIME confusion attacks).",
+      "sources": [
+        "https://cheatsheetseries.owasp.org/cheatsheets/HTTP_Headers_Cheat_Sheet.html#x-content-type-options",
+        "https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/X-Content-Type-Options"
+      ]
+    }
+  ]
+}

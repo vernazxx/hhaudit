@@ -118,8 +118,8 @@ func Scan(ctx context.Context, client *http.Client, target *url.URL) (*Result, e
 	}, nil
 }
 
-// Audit checks the target headers against the knowledge base.
-func Audit(kb map[string]Header, tgH http.Header) error {
+// Audit checks the target headers against the knowledge base rules.
+func Audit(rules []Rule, tgH http.Header) error {
 	// TODO: audit header values against a baseline db
 	return nil
 }

@@ -54,7 +54,9 @@ fmt.Println("Final URL:", res.Final)
 err = audit.DumpHeaders(os.Stdout, res.Header) // sanitizes control characters
 ```
 
-Inputs are validated at every entry point; invalid input returns errors you can match with `errors.Is` (`audit.ErrUnsupportedScheme`, `audit.ErrNoHost`, `audit.ErrNilClient`, `audit.ErrNilTarget`, `audit.ErrNilWriter`, `audit.ErrInvalidOption`).
+The baseline is `audit/baseline.json`, embedded in the binary. Each rule names a header, whether it should be `present` or `absent`, the allowed and recommended values, an explanation and the sources it comes from (OWASP, MDN, RFC). `audit.KnowledgeBase()` returns the embedded rules; `audit.LoadRules(r)` reads and validates your own baseline document in the same format (at most 1 MiB, unknown fields rejected).
+
+Inputs are validated at every entry point; invalid input returns errors you can match with `errors.Is` (`audit.ErrUnsupportedScheme`, `audit.ErrNoHost`, `audit.ErrNilClient`, `audit.ErrNilTarget`, `audit.ErrNilWriter`, `audit.ErrInvalidOption`, `audit.ErrInvalidBaseline`).
 
 ## Local development
 
