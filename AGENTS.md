@@ -10,7 +10,7 @@ Current state (verify before relying on it — the code is early-stage):
 
 - Module `github.com/vernazxx/hhaudit`. `main.go` is only the CLI entrypoint (flags, banner, version, wiring); all logic is in the `audit` package (`audit/audit.go`, `audit/kb.go`, tests in `audit/audit_test.go`), which is also importable as a library.
 - Flow: parse `-u` / `-version` → `printBanner` → `audit.ParseTarget` (absolute `http`/`https` URL with a host) → `audit.KnowledgeBase` → `audit.NewClient` (timeout, redirect limit, http(s)-only redirects) → `audit.Scan` (HTTP `HEAD`, reports the final URL) → `audit.DumpHeaders` (sorted, control characters sanitized) → `audit.Audit`.
-- `audit.Audit` is a stub (`// TODO`, tracked in #87). The knowledge base (`map[string]Header` in `audit/kb.go`) is the intended baseline DB and only has `Content-Type` so far (#3, #88).
+- `audit.Audit` is a stub (`// TODO`, tracked in #87). The knowledge base is `audit/baseline.json`, embedded with `go:embed` and loaded and validated by `audit.LoadRules` (`audit/kb.go`) into `[]audit.Rule`. It has `Content-Type` and `X-Content-Type-Options` so far (#88 extends it). Every rule must cite an https source; `LoadRules` rejects it otherwise.
 - No third-party runtime dependencies. `go.mod` only pulls `golang.org/x/vuln` (govulncheck) as a `tool` dependency. Keep it that way unless there is a strong reason; every new dependency is attack surface and must be justified in the PR.
 
 ## Commands
