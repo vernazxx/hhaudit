@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"slices"
 	"strings"
+	"unicode"
 )
 
 // MaxBaselineSize is the largest baseline document LoadRules accepts.
@@ -184,6 +185,9 @@ func validateRule(rule Rule) error {
 	if strings.TrimSpace(rule.Doc) == "" {
 		return invalid("empty doc")
 	}
+	if !printable(rule.Doc) {
+		return invalid("doc contains control or format characters")
+	}
 	if len(rule.Sources) == 0 {
 		return invalid("no sources")
 	}
@@ -199,6 +203,14 @@ func validateRule(rule Rule) error {
 		if rule.Recommended == "" {
 			return invalid("present rule needs a recommended value")
 		}
+		if err := checkValue(rule.Recommended); err != "" {
+			return invalid("recommended value %q %s", rule.Recommended, err)
+		}
+		for _, v := range rule.Allowed {
+			if err := checkValue(v); err != "" {
+				return invalid("allowed value %q %s", v, err)
+			}
+		}
 		if len(rule.Allowed) > 0 && !containsFold(rule.Allowed, rule.Recommended) {
 			return invalid("recommended value %q is not in allowed", rule.Recommended)
 		}
@@ -208,6 +220,30 @@ func validateRule(rule Rule) error {
 		}
 	}
 	return nil
+}
+
+// checkValue describes why v can't be used as a header value in a rule, or
+// returns "" if it can. Values are compared with trimmed server values, so
+// they must be trimmed themselves, and they are printed in reports.
+func checkValue(v string) string {
+	switch {
+	case v == "":
+		return "is empty"
+	case strings.TrimSpace(v) != v:
+		return "has leading or trailing whitespace"
+	case !printable(v):
+		return "contains control or format characters"
+	}
+	return ""
+}
+
+// printable reports whether s is free of control characters (including ANSI
+// escape introducers) and Unicode format characters such as bidi overrides
+// and zero-width spaces, so it can't alter the terminal when printed.
+func printable(s string) bool {
+	return !strings.ContainsFunc(s, func(r rune) bool {
+		return unicode.IsControl(r) || unicode.Is(unicode.Cf, r)
+	})
 }
 
 func containsFold(list []string, s string) bool {

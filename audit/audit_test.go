@@ -365,6 +365,14 @@ func TestLoadRulesRejectsInvalid(t *testing.T) {
 		{"recommended not allowed", doc(ruleJSON(t, map[string]any{"recommended": "off"}))},
 		{"absent with recommended", doc(ruleJSON(t, map[string]any{"expect": "absent", "allowed": nil}))},
 		{"absent with allowed", doc(ruleJSON(t, map[string]any{"expect": "absent", "recommended": nil}))},
+		{"doc with escape sequence", doc(ruleJSON(t, map[string]any{"doc": "ok \x1b[2J"}))},
+		{"doc with bidi override", doc(ruleJSON(t, map[string]any{"doc": "ok \u202e evil"}))},
+		{"doc with newline", doc(ruleJSON(t, map[string]any{"doc": "line\nbreak"}))},
+		{"recommended with escape sequence", doc(ruleJSON(t, map[string]any{"allowed": nil, "recommended": "on\x1b[2J"}))},
+		{"recommended with whitespace", doc(ruleJSON(t, map[string]any{"allowed": []string{" on"}, "recommended": " on"}))},
+		{"allowed with zero-width space", doc(ruleJSON(t, map[string]any{"allowed": []string{"on", "o\u200bn"}}))},
+		{"allowed empty value", doc(ruleJSON(t, map[string]any{"allowed": []string{"on", ""}}))},
+		{"allowed with whitespace", doc(ruleJSON(t, map[string]any{"allowed": []string{"on", "off "}}))},
 		{"too large", doc(ruleJSON(t, map[string]any{"doc": strings.Repeat("a", audit.MaxBaselineSize)}))},
 	}
 
