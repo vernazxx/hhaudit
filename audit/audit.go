@@ -222,11 +222,7 @@ func WriteReport(w io.Writer, findings []Finding) error {
 		}
 		failed++
 
-		advice := "remove this header"
-		if f.Rule.Expect == Present {
-			advice = Sanitize(f.Rule.Name) + ": " + Sanitize(f.Rule.Recommended)
-		}
-		if _, err := fmt.Fprintf(w, "%-8s recommended: %s\n", "", advice); err != nil {
+		if _, err := fmt.Fprintf(w, "%-8s recommended: %s\n", "", advice(f.Rule)); err != nil {
 			return err
 		}
 		if len(f.Rule.Sources) > 0 {
@@ -238,6 +234,18 @@ func WriteReport(w io.Writer, findings []Finding) error {
 
 	_, err := fmt.Fprintf(w, "\n%d checks: %d passed, %d failed\n", len(findings), len(findings)-failed, failed)
 	return err
+}
+
+// removeAdvice is the recommendation for a header an absent rule finds.
+const removeAdvice = "remove this header"
+
+// advice returns the sanitized recommendation for a rule that didn't pass:
+// the header to set for a present rule, removeAdvice otherwise.
+func advice(rule Rule) string {
+	if rule.Expect == Present {
+		return Sanitize(rule.Name) + ": " + Sanitize(rule.Recommended)
+	}
+	return removeAdvice
 }
 
 // unsafeRune reports whether r must not reach a terminal: control characters
