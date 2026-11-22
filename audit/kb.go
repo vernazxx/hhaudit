@@ -11,7 +11,6 @@ import (
 	"net/url"
 	"slices"
 	"strings"
-	"unicode"
 )
 
 // MaxBaselineSize is the largest baseline document LoadRules accepts.
@@ -241,9 +240,7 @@ func checkValue(v string) string {
 // escape introducers) and Unicode format characters such as bidi overrides
 // and zero-width spaces, so it can't alter the terminal when printed.
 func printable(s string) bool {
-	return !strings.ContainsFunc(s, func(r rune) bool {
-		return unicode.IsControl(r) || unicode.Is(unicode.Cf, r)
-	})
+	return !strings.ContainsFunc(s, unsafeRune)
 }
 
 func containsFold(list []string, s string) bool {

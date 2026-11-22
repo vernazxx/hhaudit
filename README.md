@@ -10,19 +10,39 @@ Other projects with similar goals as `hhaudit`:
 
 ## Usage
 
-Pass the URL to audit with `-u`. With no flags it audits `http://example.com`.
+Pass the URL to audit with `-u`; it's required. Any other argument is an error, so a typo can't make the tool audit a different site than the one you meant.
 
 ```sh
 hhaudit -u https://example.com
 ```
 
-It prints a banner, the target and the final URL after redirects, then the response headers, sorted and with control characters and Unicode format characters (such as bidi overrides) replaced.
+It prints a banner, the target and the final URL after redirects, the response headers, and an audit of those headers against the embedded baseline. Everything that comes from the server is printed with control characters and Unicode format characters (such as bidi overrides) replaced.
+
+```text
+Audit:
+PASS     Content-Type: text/html
+MISSING  X-Content-Type-Options
+         recommended: X-Content-Type-Options: nosniff
+         see: https://cheatsheetseries.owasp.org/cheatsheets/HTTP_Headers_Cheat_Sheet.html#x-content-type-options
+
+2 checks: 1 passed, 1 failed
+```
+
+Each check is `PASS`, `FAIL` (sent with a value the baseline doesn't allow), `MISSING` (should be sent but isn't) or `REMOVE` (shouldn't be sent but is). Values are compared case-insensitively after trimming whitespace; an empty value counts as missing, and a header sent several times must have an allowed value every time.
+
+Exit codes, for use in CI:
+
+| Code | Meaning |
+|---|---|
+| `0` | Every check passed |
+| `1` | The tool failed: missing `-u`, unexpected argument, invalid flag or URL, network error, invalid baseline |
+| `2` | The audit completed and at least one check didn't pass |
 
 ```console
 $ hhaudit -h
 Usage of hhaudit:
   -u string
-    	The URL of the target website to audit (default "http://example.com")
+    	The URL of the target website to audit (required)
   -version
     	Print version information and exit
 ```
@@ -50,9 +70,24 @@ res, err := audit.Scan(ctx, client, target)
 if err != nil {
 	return err
 }
-fmt.Println("Final URL:", res.Final)
+fmt.Println("Final URL:", audit.Sanitize(res.Final.String()))
 err = audit.DumpHeaders(os.Stdout, res.Header) // sanitizes control and format characters
+
+rules, err := audit.KnowledgeBase()
+if err != nil {
+	return err
+}
+findings, err := audit.Audit(rules, res.Header)
+if err != nil {
+	return err
+}
+err = audit.WriteReport(os.Stdout, findings) // sanitized, with a summary line
+if audit.Failed(findings) {
+	// at least one check didn't pass
+}
 ```
+
+`Finding.Got` holds the raw values the server sent; pass them through `audit.Sanitize` before printing them yourself.
 
 The baseline is `audit/baseline.json`, embedded in the binary. Each rule names a header, whether it should be `present` or `absent`, the allowed and recommended values, an explanation and the sources it comes from (OWASP, MDN, RFC). `audit.KnowledgeBase()` returns the embedded rules; `audit.LoadRules(r)` reads and validates your own baseline document in the same format (at most 1 MiB; unknown fields, and control or Unicode format characters in printed fields, are rejected).
 

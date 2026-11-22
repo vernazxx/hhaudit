@@ -488,3 +488,220 @@ func assertErrorIs(t testing.TB, got, want error) {
 		t.Errorf("got error %v want error %v", got, want)
 	}
 }
+
+func testRules() []audit.Rule {
+	return []audit.Rule{
+		{
+			Name: "X-Content-Type-Options", Category: audit.Security, Expect: audit.Present,
+			Allowed: []string{"nosniff"}, Recommended: "nosniff", Doc: "d",
+			Sources: []string{"https://example.com/xcto"},
+		},
+		{
+			Name: "Content-Type", Category: audit.General, Expect: audit.Present,
+			Recommended: "text/html; charset=UTF-8", Doc: "d",
+			Sources: []string{"https://example.com/ct"},
+		},
+		{
+			Name: "Server", Category: audit.Security, Expect: audit.Absent, Doc: "d",
+			Sources: []string{"https://example.com/server"},
+		},
+	}
+}
+
+func TestAudit(t *testing.T) {
+	cases := []struct {
+		name   string
+		header http.Header
+		want   map[string]audit.Status
+	}{
+		{
+			name:   "all pass",
+			header: http.Header{"X-Content-Type-Options": {"nosniff"}, "Content-Type": {"text/plain"}},
+			want:   map[string]audit.Status{"X-Content-Type-Options": audit.Pass, "Content-Type": audit.Pass, "Server": audit.Pass},
+		},
+		{
+			name:   "allowed value is case-insensitive",
+			header: http.Header{"X-Content-Type-Options": {"NOSNIFF"}},
+			want:   map[string]audit.Status{"X-Content-Type-Options": audit.Pass},
+		},
+		{
+			name:   "allowed value is trimmed",
+			header: http.Header{"X-Content-Type-Options": {" nosniff "}},
+			want:   map[string]audit.Status{"X-Content-Type-Options": audit.Pass},
+		},
+		{
+			name:   "value not allowed",
+			header: http.Header{"X-Content-Type-Options": {"sniff"}},
+			want:   map[string]audit.Status{"X-Content-Type-Options": audit.Fail},
+		},
+		{
+			name:   "one of several values not allowed",
+			header: http.Header{"X-Content-Type-Options": {"nosniff", "sniff"}},
+			want:   map[string]audit.Status{"X-Content-Type-Options": audit.Fail},
+		},
+		{
+			name:   "comma-joined values are one value",
+			header: http.Header{"X-Content-Type-Options": {"nosniff, nosniff"}},
+			want:   map[string]audit.Status{"X-Content-Type-Options": audit.Fail},
+		},
+		{
+			name:   "missing headers",
+			header: http.Header{},
+			want:   map[string]audit.Status{"X-Content-Type-Options": audit.Missing, "Content-Type": audit.Missing, "Server": audit.Pass},
+		},
+		{
+			name:   "nil header",
+			header: nil,
+			want:   map[string]audit.Status{"X-Content-Type-Options": audit.Missing, "Server": audit.Pass},
+		},
+		{
+			name:   "empty value counts as missing",
+			header: http.Header{"Content-Type": {""}, "X-Content-Type-Options": {"  "}},
+			want:   map[string]audit.Status{"Content-Type": audit.Missing, "X-Content-Type-Options": audit.Missing},
+		},
+		{
+			name:   "empty value next to an allowed one fails",
+			header: http.Header{"X-Content-Type-Options": {"nosniff", ""}},
+			want:   map[string]audit.Status{"X-Content-Type-Options": audit.Fail},
+		},
+		{
+			name:   "unwanted header sent",
+			header: http.Header{"Server": {"nginx/1.25.3"}},
+			want:   map[string]audit.Status{"Server": audit.Unwanted},
+		},
+		{
+			name:   "unwanted header sent empty",
+			header: http.Header{"Server": {""}},
+			want:   map[string]audit.Status{"Server": audit.Unwanted},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			findings, err := audit.Audit(testRules(), tc.header)
+			assertError(t, err, nil)
+			if len(findings) != len(testRules()) {
+				t.Fatalf("got %d findings want %d", len(findings), len(testRules()))
+			}
+			for i, f := range findings {
+				if f.Rule.Name != testRules()[i].Name {
+					t.Errorf("finding %d is %s, want rule order %s", i, f.Rule.Name, testRules()[i].Name)
+				}
+				if want, ok := tc.want[f.Rule.Name]; ok && f.Status != want {
+					t.Errorf("%s: got %s want %s", f.Rule.Name, f.Status, want)
+				}
+			}
+		})
+	}
+}
+
+func TestAuditRejectsNoRules(t *testing.T) {
+	_, err := audit.Audit(nil, http.Header{})
+	assertErrorIs(t, err, audit.ErrInvalidBaseline)
+}
+
+func TestAuditEmbeddedBaseline(t *testing.T) {
+	cases := []struct {
+		name    string
+		headers map[string]string
+		failed  bool
+	}{
+		{"compliant", map[string]string{"X-Content-Type-Options": "nosniff", "Content-Type": "text/html; charset=UTF-8"}, false},
+		{"no nosniff", map[string]string{"Content-Type": "text/html; charset=UTF-8"}, true},
+	}
+
+	rules, err := audit.KnowledgeBase()
+	assertError(t, err, nil)
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				for k, v := range tc.headers {
+					w.Header().Set(k, v)
+				}
+			}))
+			t.Cleanup(srv.Close)
+
+			res, err := audit.Scan(context.Background(), newClient(t), mustParse(t, srv.URL))
+			assertError(t, err, nil)
+			findings, err := audit.Audit(rules, res.Header)
+			assertError(t, err, nil)
+			if got := audit.Failed(findings); got != tc.failed {
+				t.Errorf("Failed = %v want %v (findings %+v)", got, tc.failed, findings)
+			}
+		})
+	}
+}
+
+func TestFailed(t *testing.T) {
+	cases := []struct {
+		statuses []audit.Status
+		want     bool
+	}{
+		{nil, false},
+		{[]audit.Status{audit.Pass, audit.Pass}, false},
+		{[]audit.Status{audit.Pass, audit.Fail}, true},
+		{[]audit.Status{audit.Missing}, true},
+		{[]audit.Status{audit.Unwanted}, true},
+	}
+
+	for _, tc := range cases {
+		var fs []audit.Finding
+		for _, s := range tc.statuses {
+			fs = append(fs, audit.Finding{Status: s})
+		}
+		if got := audit.Failed(fs); got != tc.want {
+			t.Errorf("Failed(%v) = %v want %v", tc.statuses, got, tc.want)
+		}
+	}
+}
+
+func TestStatusString(t *testing.T) {
+	cases := []struct {
+		s    audit.Status
+		want string
+	}{
+		{audit.Pass, "PASS"},
+		{audit.Fail, "FAIL"},
+		{audit.Missing, "MISSING"},
+		{audit.Unwanted, "REMOVE"},
+		{audit.Status(99), "UNKNOWN"},
+	}
+
+	for _, tc := range cases {
+		if got := tc.s.String(); got != tc.want {
+			t.Errorf("got %q want %q", got, tc.want)
+		}
+	}
+}
+
+func TestWriteReport(t *testing.T) {
+	rules := testRules()
+	findings := []audit.Finding{
+		{Rule: rules[0], Status: audit.Fail, Got: []string{"sniff\x1b[2J", "x\u202ey"}},
+		{Rule: rules[1], Status: audit.Pass, Got: []string{"text/html"}},
+		{Rule: rules[0], Status: audit.Missing},
+		{Rule: rules[2], Status: audit.Unwanted, Got: []string{"nginx"}},
+	}
+
+	var buf bytes.Buffer
+	assertError(t, audit.WriteReport(&buf, findings), nil)
+
+	want := "FAIL     X-Content-Type-Options: sniff�[2J, x�y\n" +
+		"         recommended: X-Content-Type-Options: nosniff\n" +
+		"         see: https://example.com/xcto\n" +
+		"PASS     Content-Type: text/html\n" +
+		"MISSING  X-Content-Type-Options\n" +
+		"         recommended: X-Content-Type-Options: nosniff\n" +
+		"         see: https://example.com/xcto\n" +
+		"REMOVE   Server: nginx\n" +
+		"         recommended: remove this header\n" +
+		"         see: https://example.com/server\n" +
+		"\n4 checks: 1 passed, 3 failed\n"
+	if got := buf.String(); got != want {
+		t.Errorf("report mismatch\ngot:\n%s\nwant:\n%s", got, want)
+	}
+}
+
+func TestWriteReportNilWriter(t *testing.T) {
+	assertErrorIs(t, audit.WriteReport(nil, nil), audit.ErrNilWriter)
+}

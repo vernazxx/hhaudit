@@ -118,10 +118,141 @@ func Scan(ctx context.Context, client *http.Client, target *url.URL) (*Result, e
 	}, nil
 }
 
-// Audit checks the target headers against the knowledge base rules.
-func Audit(rules []Rule, tgH http.Header) error {
-	// TODO: audit header values against a baseline db
-	return nil
+// Status is the outcome of checking one rule against a response.
+type Status int16
+
+const (
+	// Pass: the header matches the rule.
+	Pass Status = iota
+	// Fail: the header is sent, but with a value the rule doesn't allow.
+	Fail
+	// Missing: a present rule's header isn't sent.
+	Missing
+	// Unwanted: an absent rule's header is sent.
+	Unwanted
+)
+
+func (s Status) String() string {
+	switch s {
+	case Pass:
+		return "PASS"
+	case Fail:
+		return "FAIL"
+	case Missing:
+		return "MISSING"
+	case Unwanted:
+		return "REMOVE"
+	}
+	return "UNKNOWN"
+}
+
+// Finding is the result of one rule. Got holds the values the target sent,
+// unsanitized; print them only through Sanitize or WriteReport.
+type Finding struct {
+	Rule   Rule
+	Status Status
+	Got    []string
+}
+
+// Audit checks the target headers against the rules and returns one finding
+// per rule, in the order of rules. It returns an error, never an empty
+// passing result, when there are no rules.
+func Audit(rules []Rule, h http.Header) ([]Finding, error) {
+	if len(rules) == 0 {
+		return nil, fmt.Errorf("%w: no rules", ErrInvalidBaseline)
+	}
+
+	findings := make([]Finding, 0, len(rules))
+	for _, rule := range rules {
+		got := h.Values(rule.Name)
+		findings = append(findings, Finding{Rule: rule, Status: check(rule, got), Got: got})
+	}
+	return findings, nil
+}
+
+func check(rule Rule, got []string) Status {
+	if rule.Expect == Absent {
+		if len(got) > 0 {
+			return Unwanted
+		}
+		return Pass
+	}
+
+	// An empty value is as good as not sending the header (e.g. an empty
+	// Content-Type lets the browser sniff)
+	sent := slices.DeleteFunc(slices.Clone(got), func(v string) bool { return strings.TrimSpace(v) == "" })
+	if len(sent) == 0 {
+		return Missing
+	}
+	if len(rule.Allowed) == 0 {
+		return Pass
+	}
+	for _, v := range got {
+		if !containsFold(rule.Allowed, strings.TrimSpace(v)) {
+			return Fail
+		}
+	}
+	return Pass
+}
+
+// Failed reports whether any finding is not a pass.
+func Failed(findings []Finding) bool {
+	return slices.ContainsFunc(findings, func(f Finding) bool { return f.Status != Pass })
+}
+
+// WriteReport writes one line per finding to w, with the recommendation and
+// source under each finding that didn't pass, and a summary line. Every value
+// is sanitized.
+func WriteReport(w io.Writer, findings []Finding) error {
+	if w == nil {
+		return ErrNilWriter
+	}
+
+	failed := 0
+	for _, f := range findings {
+		line := Sanitize(f.Rule.Name)
+		if len(f.Got) > 0 {
+			line += ": " + Sanitize(strings.Join(f.Got, ", "))
+		}
+		if _, err := fmt.Fprintf(w, "%-8s %s\n", f.Status, line); err != nil {
+			return err
+		}
+		if f.Status == Pass {
+			continue
+		}
+		failed++
+
+		if _, err := fmt.Fprintf(w, "%-8s recommended: %s\n", "", advice(f.Rule)); err != nil {
+			return err
+		}
+		if len(f.Rule.Sources) > 0 {
+			if _, err := fmt.Fprintf(w, "%-8s see: %s\n", "", Sanitize(f.Rule.Sources[0])); err != nil {
+				return err
+			}
+		}
+	}
+
+	_, err := fmt.Fprintf(w, "\n%d checks: %d passed, %d failed\n", len(findings), len(findings)-failed, failed)
+	return err
+}
+
+// removeAdvice is the recommendation for a header an absent rule finds.
+const removeAdvice = "remove this header"
+
+// advice returns the sanitized recommendation for a rule that didn't pass:
+// the header to set for a present rule, removeAdvice otherwise.
+func advice(rule Rule) string {
+	if rule.Expect == Present {
+		return Sanitize(rule.Name) + ": " + Sanitize(rule.Recommended)
+	}
+	return removeAdvice
+}
+
+// unsafeRune reports whether r must not reach a terminal: control characters
+// (including ANSI escape introducers) and Unicode format characters (bidi
+// overrides and isolates, zero-width characters).
+func unsafeRune(r rune) bool {
+	return unicode.IsControl(r) || unicode.Is(unicode.Cf, r)
 }
 
 // Sanitize replaces control characters (including ANSI escape introducers)
@@ -130,7 +261,7 @@ func Audit(rules []Rule, tgH http.Header) error {
 // the terminal.
 func Sanitize(s string) string {
 	return strings.Map(func(r rune) rune {
-		if unicode.IsControl(r) || unicode.Is(unicode.Cf, r) {
+		if unsafeRune(r) {
 			return unicode.ReplacementChar
 		}
 		return r
