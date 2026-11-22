@@ -16,7 +16,7 @@ Pass the URL to audit with `-u`. With no flags it audits `http://example.com`.
 hhaudit -u https://example.com
 ```
 
-It prints a banner, the target and the final URL after redirects, then the response headers, sorted and with control characters replaced.
+It prints a banner, the target and the final URL after redirects, then the response headers, sorted and with control characters and Unicode format characters (such as bidi overrides) replaced.
 
 ```console
 $ hhaudit -h
@@ -51,7 +51,7 @@ if err != nil {
 	return err
 }
 fmt.Println("Final URL:", res.Final)
-err = audit.DumpHeaders(os.Stdout, res.Header) // sanitizes control characters
+err = audit.DumpHeaders(os.Stdout, res.Header) // sanitizes control and format characters
 ```
 
 The baseline is `audit/baseline.json`, embedded in the binary. Each rule names a header, whether it should be `present` or `absent`, the allowed and recommended values, an explanation and the sources it comes from (OWASP, MDN, RFC). `audit.KnowledgeBase()` returns the embedded rules; `audit.LoadRules(r)` reads and validates your own baseline document in the same format (at most 1 MiB; unknown fields, and control or Unicode format characters in printed fields, are rejected).

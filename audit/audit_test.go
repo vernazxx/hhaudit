@@ -247,6 +247,12 @@ func TestSanitize(t *testing.T) {
 		{"a\x1b[31mb", "a�[31mb"},
 		{"line\r\nbreak", "line��break"},
 		{"nul\x00", "nul�"},
+		{"c1 control\u009b31m", "c1 control�31m"},
+		{"FAIL\u202eSSAP", "FAIL�SSAP"},
+		{"isolate\u2066x\u2069", "isolate�x�"},
+		{"zero\u200bwidth", "zero�width"},
+		{"bom\ufeff", "bom�"},
+		{"café 日本", "café 日本"},
 		{"", ""},
 	}
 

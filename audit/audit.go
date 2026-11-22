@@ -125,10 +125,12 @@ func Audit(rules []Rule, tgH http.Header) error {
 }
 
 // Sanitize replaces control characters (including ANSI escape introducers)
-// so untrusted header values cannot manipulate the terminal.
+// and Unicode format characters (bidi overrides and isolates, zero-width
+// characters) so untrusted header values cannot manipulate or visually spoof
+// the terminal.
 func Sanitize(s string) string {
 	return strings.Map(func(r rune) rune {
-		if unicode.IsControl(r) {
+		if unicode.IsControl(r) || unicode.Is(unicode.Cf, r) {
 			return unicode.ReplacementChar
 		}
 		return r

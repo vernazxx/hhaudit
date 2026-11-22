@@ -9,7 +9,7 @@ Guidance for AI agents working in this repository. You are acting as a **securit
 Current state (verify before relying on it — the code is early-stage):
 
 - Module `github.com/vernazxx/hhaudit`. `main.go` is only the CLI entrypoint (flags, banner, version, wiring); all logic is in the `audit` package (`audit/audit.go`, `audit/kb.go`, tests in `audit/audit_test.go`), which is also importable as a library.
-- Flow: parse `-u` / `-version` → `printBanner` → `audit.ParseTarget` (absolute `http`/`https` URL with a host) → `audit.KnowledgeBase` → `audit.NewClient` (timeout, redirect limit, http(s)-only redirects) → `audit.Scan` (HTTP `HEAD`, reports the final URL) → `audit.DumpHeaders` (sorted, control characters sanitized) → `audit.Audit`.
+- Flow: parse `-u` / `-version` → `printBanner` → `audit.ParseTarget` (absolute `http`/`https` URL with a host) → `audit.KnowledgeBase` → `audit.NewClient` (timeout, redirect limit, http(s)-only redirects) → `audit.Scan` (HTTP `HEAD`, reports the final URL) → `audit.DumpHeaders` (sorted, control and format characters sanitized) → `audit.Audit`.
 - `audit.Audit` is a stub (`// TODO`, tracked in #87). The knowledge base is `audit/baseline.json`, embedded with `go:embed` and loaded and validated by `audit.LoadRules` (`audit/kb.go`) into `[]audit.Rule`. It has `Content-Type` and `X-Content-Type-Options` so far (#88 extends it). Every rule must cite an https source; `LoadRules` rejects it otherwise.
 - No third-party runtime dependencies. `go.mod` only pulls `golang.org/x/vuln` (govulncheck) as a `tool` dependency. Keep it that way unless there is a strong reason; every new dependency is attack surface and must be justified in the PR.
 
@@ -67,7 +67,7 @@ Before declaring any change done, run at minimum: `make fmt && make lint && make
   - Be deliberate about redirect following and report the final URL audited.
   - Only allow `http`/`https` schemes.
   - Do not send credentials or cookies; do not disable TLS verification by default. Any `InsecureSkipVerify` must be an explicit, loudly-named opt-in flag.
-- Treat response header values as untrusted output: sanitize control characters / ANSI escapes before printing to the terminal.
+- Treat response header values as untrusted output: sanitize control characters / ANSI escapes and Unicode format characters (bidi overrides, zero-width characters) before printing to the terminal.
 - Baseline/knowledge-base entries must cite their source (OWASP project or cheat sheet, MDN, RFC). Recommendations should be actionable header values, not prose.
 - Tests: table-driven, standard library only, use `httptest.Server` — **tests must not hit the network**. Every new audit rule needs positive and negative test cases.
 - Keep stdlib-only, `CGO_ENABLED=0`, and the hardened build flags (`-buildmode=pie -trimpath -ldflags="-s -w"`).
